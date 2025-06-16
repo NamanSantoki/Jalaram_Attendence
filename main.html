@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Attendance Marking</title>
+  <link href="style.css" rel="stylesheet">
+</head>
+
+<body>
+  <nav>
+    <button class="burger">☰</button>
+    <ul>
+      <li><a href="main.html">Attendance</a></li>
+      <li><a href="employees.html">Employees</a></li>
+      <li><a href="report.html">Monthly Report</a></li>
+      <li><a href="salary.html">Salary Calculator</a></li>
+      <li><a href="settings.html">Settings</a></li>
+      <li><a href="index.html">Logout</a></li>
+    </ul>
+  </nav>
+  <div class="container">
+    <h1>Mark Attendance</h1>
+
+    <div class="card">
+      <h2>Attendance for Selected Date</h2>
+      <div class="input-group">
+        <input id="attendanceDate" type="date">
+        <button onclick="saveAttendance()" id="saveButton" class="primary-btn">Save</button>
+      </div>
+      <div id="lockMessage" class="lock-message"></div>
+      <div id="attendanceList" class="attendance-list"></div>
+    </div>
+  </div>
+
+  <script>
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const burger = document.querySelector('.burger');
+      const navUl = document.querySelector('nav ul');
+
+      burger.addEventListener('click', () => {
+        navUl.classList.toggle('active');
+      });
+    });
+    // Check if user is logged in
+    if (localStorage.getItem('isLoggedIn') !== 'true') {
+      window.location.href = 'login.html';
+    }
+
+    function logout() {
+      localStorage.removeItem('isLoggedIn');
+      window.location.href = 'login.html';
+    }
+
+    function toggleMenu() {
+      const menu = document.getElementById('navMenu');
+      menu.classList.toggle('show');
+    }
+
+    let employees = JSON.parse(localStorage.getItem('employees')) || [];
+    let attendance = JSON.parse(localStorage.getItem('attendance')) || {};
+    let lockedDates = JSON.parse(localStorage.getItem('lockedDates')) || [];
+    let unlockedDates = JSON.parse(localStorage.getItem('unlockedDates')) || [];
+
+    // Validate and clean employee data on load
+    employees = employees.filter(emp => emp && typeof emp === 'object' && emp.name && !isNaN(emp.salary));
+    localStorage.setItem('employees', JSON.stringify(employees));
+
+    function loadEmployeesForAttendance() {
+      const date = document.getElementById('attendanceDate').value;
+      const lockMessage = document.getElementById('lockMessage');
+      const saveButton = document.getElementById('saveButton');
+
+      if (!date) {
+        lockMessage.textContent = '';
+        saveButton.disabled = true;
+        return;
+      }
+
+      const isLocked = lockedDates.includes(date) && !unlockedDates.includes(date);
+      lockMessage.textContent = isLocked ? `Attendance for ${formatDate(date)} is locked. Unlock in Settings to modify.` : '';
+      saveButton.disabled = isLocked;
+
+      const list = document.getElementById('attendanceList');
+      list.innerHTML = '';
+
+      if (employees.length === 0) {
+        list.innerHTML = '<p class="no-data">No employees found. Add employees first.</p>';
+        return;
+      }
+
+      employees.forEach(emp => {
+        if (!emp || !emp.name || isNaN(emp.salary)) return;
+
+        const div = document.createElement('div');
+        div.className = 'checkbox-group';
+        const isChecked = attendance[date]?.[emp.name] !== undefined ? attendance[date][emp.name] : true;
+        div.innerHTML = `
+          <input type="checkbox" id="${emp.name}-${date}" ${isChecked ? 'checked' : ''} ${isLocked ? 'disabled' : ''}>
+          <label for="${emp.name}-${date}" class="employee-label">
+            <span class="emp-name">${emp.name}</span>
+            <span class="emp-salary">₹${emp.salary}/month</span>
+          </label>
+        `;
+        list.appendChild(div);
+      });
+    }
+
+    function saveAttendance() {
+      const date = document.getElementById('attendanceDate').value;
+      if (!date) {
+        alert('Please select a date.');
+        return;
+      }
+
+      // Save attendance
+      attendance[date] = attendance[date] || {};
+      employees.forEach(emp => {
+        if (!emp || !emp.name) return;
+        attendance[date][emp.name] = document.getElementById(`${emp.name}-${date}`)?.checked || false;
+      });
+      localStorage.setItem('attendance', JSON.stringify(attendance));
+
+      // Lock the date if not already locked
+      if (!lockedDates.includes(date)) {
+        lockedDates.push(date);
+        localStorage.setItem('lockedDates', JSON.stringify(lockedDates));
+      }
+
+      loadEmployeesForAttendance();
+      showToast('Attendance saved successfully!');
+    }
+
+    function formatDate(dateString) {
+      const options = { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' };
+      return new Date(dateString).toLocaleDateString('en-US', options);
+    }
+
+    function showToast(message) {
+      const toast = document.createElement('div');
+      toast.className = 'toast';
+      toast.textContent = message;
+      document.body.appendChild(toast);
+
+      setTimeout(() => {
+        toast.classList.add('show');
+        setTimeout(() => {
+          toast.classList.remove('show');
+          setTimeout(() => {
+            document.body.removeChild(toast);
+          }, 300);
+        }, 2000);
+      }, 10);
+    }
+
+    // Set today's date and load employees on page load
+    window.onload = () => {
+      const today = new Date().toISOString().split('T')[0];
+      document.getElementById('attendanceDate').value = today;
+      document.getElementById('attendanceDate').addEventListener('change', loadEmployeesForAttendance);
+      loadEmployeesForAttendance();
+    };
+  </script>
+</body>
+
+</html>
