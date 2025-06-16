@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Employee Management</title>
+  <link href="style.css" rel="stylesheet">
+</head>
+<body>
+  <nav>
+    <ul>
+      <li><a href="main.html">Attendance</a></li>
+      <li><a href="employees.html">Employees</a></li>
+      <li><a href="report.html">Monthly Report</a></li>
+      <li><a href="salary.html">Salary Calculator</a></li>
+      <li><a href="settings.html">Settings</a></li>
+    </ul>
+  </nav>
+  <div class="container">
+    <h1>Employee Management</h1>
+    
+    <!-- Add Employee Form -->
+    <div class="card">
+      <h2>Add Employee</h2>
+      <div class="input-group">
+        <input id="employeeName" type="text" placeholder="Employee Name">
+        <input id="employeeSalary" type="number" placeholder="Monthly Salary (₹)" min="0">
+        <button onclick="addEmployee()">Add</button>
+      </div>
+    </div>
+
+    <!-- Employee List -->
+    <div class="card">
+      <h2>Employee List</h2>
+      <ul id="employeeList"></ul>
+    </div>
+  </div>
+
+  <script>
+    let employees = JSON.parse(localStorage.getItem('employees')) || [];
+
+    // Validate and clean employee data on load
+    employees = employees.filter(emp => emp && typeof emp === 'object' && emp.name && !isNaN(emp.salary));
+    localStorage.setItem('employees', JSON.stringify(employees));
+
+    function addEmployee() {
+      const name = document.getElementById('employeeName').value.trim();
+      const salary = parseFloat(document.getElementById('employeeSalary').value);
+      if (name && !isNaN(salary) && salary >= 0 && !employees.some(emp => emp.name === name)) {
+        employees.push({ name, salary });
+        localStorage.setItem('employees', JSON.stringify(employees));
+        document.getElementById('employeeName').value = '';
+        document.getElementById('employeeSalary').value = '';
+        updateEmployeeList();
+      } else {
+        alert('Please enter a unique employee name and a valid monthly salary (₹).');
+      }
+    }
+
+    function removeEmployee(name) {
+      employees = employees.filter(emp => emp.name !== name);
+      localStorage.setItem('employees', JSON.stringify(employees));
+      updateEmployeeList();
+    }
+
+    function updateEmployeeList() {
+      const list = document.getElementById('employeeList');
+      list.innerHTML = '';
+      employees.forEach(emp => {
+        if (!emp || !emp.name || isNaN(emp.salary)) return; // Skip invalid entries
+        const li = document.createElement('li');
+        li.innerHTML = `${emp.name} (₹${emp.salary}/month) <button class="red" onclick="removeEmployee('${emp.name}')">Remove</button>`;
+        list.appendChild(li);
+      });
+    }
+
+    // Load employee list on page load
+    window.onload = () => {
+      updateEmployeeList();
+    };
+  </script>
+</body>
+</html>

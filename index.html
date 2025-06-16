@@ -1,1 +1,47 @@
-<p>Hello</p>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login - Salary and Attendance Calculator</title>
+  <link href="style.css" rel="stylesheet">
+</head>
+<body>
+  <div class="container">
+    <h1>Login to Salary and Attendance Calculator</h1>
+    <div class="card login-card">
+      <div class="input-group">
+        <input id="username" type="text" placeholder="Username">
+      </div>
+      <div class="input-group">
+        <input id="password" type="password" placeholder="Password">
+      </div>
+      <button onclick="login()">Login</button>
+      <p id="errorMessage" class="error-message"></p>
+    </div>
+  </div>
+
+  <script>
+    function login() {
+      const username = document.getElementById('username').value.trim();
+      const password = document.getElementById('password').value.trim();
+      const errorMessage = document.getElementById('errorMessage');
+
+      if (username === "Dinesh" && password === "Jalaram") {
+        localStorage.setItem('isLoggedIn', 'true');
+        window.location.href = 'main.html';
+      } else {
+        errorMessage.textContent = 'Invalid username or password.';
+      }
+    }
+
+    // Clear error message on input
+    document.getElementById('username').addEventListener('input', () => {
+      document.getElementById('errorMessage').textContent = '';
+    });
+    document.getElementById('password').addEventListener('input', () => {
+      document.getElementById('errorMessage').textContent = '';
+    });
+  </script>
+</body>
+</html>

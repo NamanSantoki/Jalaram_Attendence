@@ -1,0 +1,236 @@
+/* Global Styles */
+body {
+  font-family: Arial, sans-serif;
+  background-color: #f0f4f8;
+  margin: 0;
+  padding: 0;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+h1 {
+  font-size: 2.5rem;
+  color: #1a3c6d;
+  text-align: center;
+  margin-bottom: 20px;
+  animation: slideIn 0.5s ease-in-out;
+}
+
+h2 {
+  font-size: 1.8rem;
+  color: #2c5282;
+  margin-bottom: 15px;
+}
+
+/* Navigation */
+nav {
+  background-color: #1a3c6d;
+  padding: 15px;
+  animation: fadeIn 0.5s ease-in-out;
+}
+
+nav ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+}
+
+nav a {
+  color: white;
+  text-decoration: none;
+  font-size: 1.1rem;
+  transition: color 0.3s ease, transform 0.3s ease;
+}
+
+nav a:hover {
+  color: #a3bffa;
+  transform: scale(1.1);
+}
+
+/* Card Styling */
+.card {
+  background-color: white;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  margin-bottom: 20px;
+  animation: slideIn 0.5s ease-in-out;
+}
+
+.login-card {
+  max-width: 400px;
+  margin: 50px auto;
+}
+
+/* Form Inputs */
+.input-group {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+input[type="text"],
+input[type="password"],
+input[type="number"],
+input[type="date"],
+input[type="month"],
+select {
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  flex: 1;
+  font-size: 1rem;
+}
+
+button {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 4px;
+  background-color: #2b6cb0;
+  color: white;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 0.3s ease, transform 0.3s ease;
+}
+
+button:hover {
+  background-color: #2c5282;
+  transform: scale(1.05);
+}
+
+button.red {
+  background-color: #c53030;
+}
+
+button.red:hover {
+  background-color: #9b2c2c;
+}
+
+button:disabled {
+  background-color: #cccccc;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Error and Lock Messages */
+.error-message, .lock-message {
+  color: #c53030;
+  text-align: center;
+  margin-top: 10px;
+  font-size: 1rem;
+}
+
+/* Lists */
+ul {
+  list-style: none;
+  padding: 0;
+}
+
+li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px;
+  border-bottom: 1px solid #e2e8f0;
+  animation: slideIn 0.5s ease-in-out;
+}
+
+.checkbox-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 5px 0;
+}
+
+/* Month Info */
+.month-info {
+  margin-bottom: 10px;
+  font-size: 1.1rem;
+  color: #2c5282;
+  font-weight: bold;
+}
+
+/* Table */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 10px;
+}
+
+th, td {
+  border: 1px solid #e2e8f0;
+  padding: 12px;
+  text-align: center;
+}
+
+th {
+  background-color: #edf2f7;
+  font-weight: bold;
+  color: #1a3c6d;
+}
+
+tr.even-row {
+  background-color: #f9fafb;
+}
+
+tr.odd-row {
+  background-color: #ffffff;
+}
+
+tr:hover {
+  background-color: #e0e7ff;
+  transition: background-color 0.3s ease;
+}
+
+.present {
+  color: #2f855a;
+  font-weight: bold;
+}
+
+.absent {
+  color: #c53030;
+  font-weight: bold;
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideIn {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+/* Responsive Design */
+@media (max-width: 600px) {
+  .input-group {
+    flex-direction: column;
+  }
+  nav ul {
+    flex-direction: column;
+    gap: 10px;
+    text-align: center;
+  }
+  h1 {
+    font-size: 2rem;
+  }
+  h2 {
+    font-size: 1.5rem;
+  }
+  th, td {
+    padding: 8px;
+    font-size: 0.9rem;
+  }
+  .login-card {
+    margin: 20px;
+  }
+}

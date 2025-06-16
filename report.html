@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Monthly Attendance Report</title>
+  <link href="style.css" rel="stylesheet">
+  <!-- Include SheetJS library for Excel generation -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+</head>
+<body>
+  <nav>
+    <ul>
+      <li><a href="main.html">Attendance</a></li>
+      <li><a href="employees.html">Employees</a></li>
+      <li><a href="report.html">Monthly Report</a></li>
+      <li><a href="salary.html">Salary Calculator</a></li>
+      <li><a href="settings.html">Settings</a></li>
+      <li><a href="#" onclick="logout()">Logout</a></li>
+    </ul>
+  </nav>
+  <div class="container">
+    <h1>Monthly Attendance Report</h1>
+    <div class="card">
+      <div class="input-group">
+        <input id="monthInput" type="month">
+        <button onclick="generateReport()">Generate Report</button>
+      </div>
+      <div id="monthInfo" class="month-info"></div>
+      <div id="reportTable"></div>
+    </div>
+  </div>
+
+  <script>
+    // Check if user is logged in
+    if (localStorage.getItem('isLoggedIn') !== 'true') {
+      window.location.href = 'login.html';
+    }
+
+    function logout() {
+      localStorage.removeItem('isLoggedIn');
+      window.location.href = 'login.html';
+    }
+
+    function generateReport() {
+      const month = document.getElementById('monthInput').value;
+      if (!month) {
+        alert('Please select a month.');
+        return;
+      }
+      const employees = JSON.parse(localStorage.getItem('employees')) || [];
+      const attendance = JSON.parse(localStorage.getItem('attendance')) || {};
+      const [year, monthNum] = month.split('-');
+      const daysInMonth = new Date(year, monthNum, 0).getDate();
+      
+      // Display total days in the month
+      document.getElementById('monthInfo').innerHTML = `<p>Total Days in Month: ${daysInMonth}</p>`;
+
+      // Group days into weeks (7 days per week)
+      const weeks = Math.ceil(daysInMonth / 7);
+      let table = `
+        <table>
+          <thead>
+            <tr>
+              <th>Employee</th>
+              <th>Week 1<br>(1-7)</th>
+              <th>Week 2<br>(8-14)</th>
+              <th>Week 3<br>(15-21)</th>
+              <th>Week 4<br>(22-28)</th>
+              ${daysInMonth > 28 ? '<th>Week 5<br>(29-31)</th>' : ''}
+              <th>Total Present</th>
+              <th>Total Absent</th>
+            </tr>
+          </thead>
+          <tbody>
+      `;
+
+      // Prepare data for Excel
+      const excelData = [];
+      const headers = ['Employee', 'Week 1 (1-7)', 'Week 2 (8-14)', 'Week 3 (15-21)', 'Week 4 (22-28)'];
+      if (daysInMonth > 28) headers.push('Week 5 (29-31)');
+      headers.push('Total Present', 'Total Absent');
+      excelData.push(headers);
+
+      employees.forEach((emp, index) => {
+        if (!emp || !emp.name) return; // Skip invalid entries
+        table += `<tr class="${index % 2 === 0 ? 'even-row' : 'odd-row'}"><td>${emp.name}</td>`;
+        
+        // Calculate weekly attendance for table display
+        let totalPresent = 0;
+        const rowData = [emp.name];
+        for (let week = 0; week < weeks; week++) {
+          let weekAttendance = '';
+          let weekAttendanceExcel = '';
+          const startDay = week * 7 + 1;
+          const endDay = Math.min(startDay + 6, daysInMonth);
+          for (let day = startDay; day <= endDay; day++) {
+            const date = `${year}-${monthNum.padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+            const isPresent = attendance[date]?.[emp.name] || false;
+            weekAttendance += isPresent ? '<span class="present">✔️</span>' : '<span class="absent">❌</span>';
+            weekAttendanceExcel += isPresent ? '✔️' : '❌';
+            if (isPresent) totalPresent++;
+          }
+          table += `<td>${weekAttendance}</td>`;
+          rowData.push(weekAttendanceExcel);
+        }
+
+        // Calculate total absent
+        const totalAbsent = daysInMonth - totalPresent;
+        table += `<td>${totalPresent}</td><td>${totalAbsent}</td>`;
+        table += '</tr>';
+
+        // Add totals to Excel row
+        rowData.push(totalPresent, totalAbsent);
+        excelData.push(rowData);
+      });
+      table += '</tbody></table>';
+      document.getElementById('reportTable').innerHTML = table;
+
+      // Generate and download Excel file
+      const wb = XLSX.utils.book_new();
+      const ws = XLSX.utils.aoa_to_sheet(excelData);
+      XLSX.utils.book_append_sheet(wb, ws, 'Attendance Report');
+      XLSX.writeFile(wb, `Attendance_Report_${year}-${monthNum}.xlsx`);
+    }
+
+    // Set current month and generate report on page load
+    window.onload = () => {
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = String(now.getMonth() + 1).padStart(2, '0');
+      document.getElementById('monthInput').value = `${year}-${month}`;
+      generateReport();
+    };
+  </script>
+</body>
+</html>

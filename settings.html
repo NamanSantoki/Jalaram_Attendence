@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Settings</title>
+  <link href="style.css" rel="stylesheet">
+</head>
+<body>
+  <nav>
+    <ul>
+      <li><a href="main.html">Attendance</a></li>
+      <li><a href="employees.html">Employees</a></li>
+      <li><a href="report.html">Monthly Report</a></li>
+      <li><a href="salary.html">Salary Calculator</a></li>
+      <li><a href="settings.html">Settings</a></li>
+      <li><a href="#" onclick="logout()">Logout</a></li>
+    </ul>
+  </nav>
+  <div class="container">
+    <h1>Admin Settings</h1>
+
+    <!-- Update Attendance Section -->
+    <div class="card">
+      <h2>Update Attendance</h2>
+      <div style="width: 25%;" class="input-group">
+        <input id="updateAttendanceDate" type="date">
+      </div>
+      <div id="updateAttendanceList"></div>
+      <button id="updateSaveButton" onclick="updateAttendance()">Update Attendance</button>
+    </div>
+  </div>
+
+  <script>
+    // Check if user is logged in
+    if (localStorage.getItem('isLoggedIn') !== 'true') {
+      window.location.href = 'login.html';
+    }
+
+    function logout() {
+      localStorage.removeItem('isLoggedIn');
+      window.location.href = 'login.html';
+    }
+
+    let employees = JSON.parse(localStorage.getItem('employees')) || [];
+    let attendance = JSON.parse(localStorage.getItem('attendance')) || {};
+    let lockedDates = JSON.parse(localStorage.getItem('lockedDates')) || [];
+    let unlockedDates = JSON.parse(localStorage.getItem('unlockedDates')) || [];
+
+    // Populate locked dates dropdown
+    function loadLockedDates() {
+      const select = document.getElementById('lockedDateSelect');
+      select.innerHTML = '<option value="">Select a date to unlock</option>';
+      lockedDates.forEach(date => {
+        if (!unlockedDates.includes(date)) {
+          const option = document.createElement('option');
+          option.value = date;
+          option.textContent = date;
+          select.appendChild(option);
+        }
+      });
+    }
+
+    function unlockDate() {
+      const date = document.getElementById('lockedDateSelect').value;
+      if (!date) {
+        alert('Please select a date to unlock.');
+        return;
+      }
+      if (!unlockedDates.includes(date)) {
+        unlockedDates.push(date);
+        localStorage.setItem('unlockedDates', JSON.stringify(unlockedDates));
+        loadLockedDates();
+        alert(`Date ${date} has been unlocked. You can now modify attendance on the Attendance page.`);
+      }
+    }
+
+    function loadEmployeesForUpdateAttendance() {
+      const date = document.getElementById('updateAttendanceDate').value;
+      const updateSaveButton = document.getElementById('updateSaveButton');
+      if (!date) {
+        updateSaveButton.disabled = true;
+        return;
+      }
+
+      const isLocked = lockedDates.includes(date) && !unlockedDates.includes(date);
+      updateSaveButton.disabled = isLocked;
+
+      const list = document.getElementById('updateAttendanceList');
+      list.innerHTML = '';
+      employees.forEach(emp => {
+        if (!emp || !emp.name || isNaN(emp.salary)) return; // Skip invalid entries
+        const div = document.createElement('div');
+        div.className = 'checkbox-group';
+        const isChecked = attendance[date]?.[emp.name] !== undefined ? attendance[date][emp.name] : true;
+        div.innerHTML = `
+          <input type="checkbox" id="update-${emp.name}-${date}" ${isChecked ? 'checked' : ''} ${isLocked ? 'disabled' : ''}>
+          <label for="update-${emp.name}-${date}">${emp.name} (₹${emp.salary}/month)</label>
+        `;
+        list.appendChild(div);
+      });
+    }
+
+    function updateAttendance() {
+      const date = document.getElementById('updateAttendanceDate').value;
+      if (!date) {
+        alert('Please select a date.');
+        return;
+      }
+
+      // Update attendance
+      attendance[date] = attendance[date] || {};
+      employees.forEach(emp => {
+        if (!emp || !emp.name) return; // Skip invalid entries
+        attendance[date][emp.name] = document.getElementById(`update-${emp.name}-${date}`)?.checked || false;
+      });
+      localStorage.setItem('attendance', JSON.stringify(attendance));
+
+      // Re-lock the date after update
+      if (unlockedDates.includes(date)) {
+        unlockedDates = unlockedDates.filter(d => d !== date);
+        localStorage.setItem('unlockedDates', JSON.stringify(unlockedDates));
+      }
+
+      loadEmployeesForUpdateAttendance();
+      loadLockedDates();
+      alert('Attendance updated for this date! Date is now re-locked.');
+    }
+
+    // Load settings on page load
+    window.onload = () => {
+      loadLockedDates();
+      document.getElementById('updateAttendanceDate').addEventListener('change', loadEmployeesForUpdateAttendance);
+    };
+  </script>
+</body>
+</html>

@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Salary Calculator</title>
+  <link href="style.css" rel="stylesheet">
+</head>
+<body>
+  <nav>
+    <ul>
+      <li><a href="main.html">Attendance</a></li>
+      <li><a href="employees.html">Employees</a></li>
+      <li><a href="report.html">Monthly Report</a></li>
+      <li><a href="salary.html">Salary Calculator</a></li>
+      <li><a href="settings.html">Settings</a></li>
+    </ul>
+  </nav>
+  <div class="container">
+    <h1>Salary Calculator</h1>
+    <div class="card">
+      <div class="input-group">
+        <input id="monthInput" type="month">
+        <button onclick="calculateSalaries()">Calculate Salaries</button>
+      </div>
+      <div id="salaryTable"></div>
+    </div>
+  </div>
+
+  <script>
+    const DAYS_PER_MONTH = 30; // Assumed working days per month for salary calculation
+
+    function calculateSalaries() {
+      const month = document.getElementById('monthInput').value;
+      if (!month) {
+        alert('Please select a month.');
+        return;
+      }
+      const employees = JSON.parse(localStorage.getItem('employees')) || [];
+      const attendance = JSON.parse(localStorage.getItem('attendance')) || {};
+      const [year, monthNum] = month.split('-');
+      const daysInMonth = new Date(year, monthNum, 0).getDate();
+      let table = `
+        <table>
+          <thead>
+            <tr>
+              <th>Employee</th>
+              <th>Monthly Salary (₹)</th>
+              <th>Per Day Salary (₹)</th>
+              <th>Days Present</th>
+              <th>Salary (₹)</th>
+            </tr>
+          </thead>
+          <tbody>
+      `;
+      employees.forEach((emp, index) => {
+        if (!emp || !emp.name || isNaN(emp.salary)) return; // Skip invalid entries
+        let daysPresent = 0;
+        for (let day = 1; day <= daysInMonth; day++) {
+          const date = `${year}-${monthNum.padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+          if (attendance[date]?.[emp.name]) daysPresent++;
+        }
+        const perDaySalary = (emp.salary / DAYS_PER_MONTH).toFixed(2);
+        const salary = (daysPresent * perDaySalary).toFixed(2);
+        table += `
+          <tr class="${index % 2 === 0 ? 'even-row' : 'odd-row'}">
+            <td>${emp.name}</td>
+            <td>${emp.salary}</td>
+            <td>${perDaySalary}</td>
+            <td>${daysPresent}</td>
+            <td>${salary}</td>
+          </tr>
+        `;
+      });
+      table += '</tbody></table>';
+      document.getElementById('salaryTable').innerHTML = table;
+    }
+
+    // Set current month and calculate salaries on page load
+    window.onload = () => {
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = String(now.getMonth() + 1).padStart(2, '0');
+      document.getElementById('monthInput').value = `${year}-${month}`;
+      calculateSalaries();
+    };
+  </script>
+</body>
+</html>

@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Attendance Marking</title>
+  <link href="style.css" rel="stylesheet">
+</head>
+<body>
+  <nav>
+    <ul>
+      <li><a href="main.html">Attendance</a></li>
+      <li><a href="employees.html">Employees</a></li>
+      <li><a href="report.html">Monthly Report</a></li>
+      <li><a href="salary.html">Salary Calculator</a></li>
+      <li><a href="settings.html">Settings</a></li>
+      <li><a href="#" onclick="logout()">Logout</a></li>
+    </ul>
+  </nav>
+  <div class="container">
+    <h1>Mark Attendance</h1>
+    
+    <!-- Attendance Marking -->
+    <div class="card">
+      <h2>Attendance for Selected Date</h2>
+      <div class="input-group">
+        <input id="attendanceDate" type="date">
+      </div>
+      <div id="lockMessage" class="lock-message"></div>
+      <div id="attendanceList"></div>
+      <button id="saveButton" onclick="saveAttendance()">Save Attendance</button>
+    </div>
+  </div>
+
+  <script>
+    // Check if user is logged in
+    if (localStorage.getItem('isLoggedIn') !== 'true') {
+      window.location.href = 'login.html';
+    }
+
+    function logout() {
+      localStorage.removeItem('isLoggedIn');
+      window.location.href = 'login.html';
+    }
+
+    let employees = JSON.parse(localStorage.getItem('employees')) || [];
+    let attendance = JSON.parse(localStorage.getItem('attendance')) || {};
+    let lockedDates = JSON.parse(localStorage.getItem('lockedDates')) || [];
+    let unlockedDates = JSON.parse(localStorage.getItem('unlockedDates')) || [];
+
+    // Validate and clean employee data on load
+    employees = employees.filter(emp => emp && typeof emp === 'object' && emp.name && !isNaN(emp.salary));
+    localStorage.setItem('employees', JSON.stringify(employees));
+
+    function loadEmployeesForAttendance() {
+      const date = document.getElementById('attendanceDate').value;
+      const lockMessage = document.getElementById('lockMessage');
+      const saveButton = document.getElementById('saveButton');
+      if (!date) {
+        lockMessage.textContent = '';
+        saveButton.disabled = true;
+        return;
+      }
+
+      const isLocked = lockedDates.includes(date) && !unlockedDates.includes(date);
+      lockMessage.textContent = isLocked ? `Attendance for ${date} is locked and cannot be modified. Use Settings to unlock.` : '';
+      saveButton.disabled = isLocked;
+
+      const list = document.getElementById('attendanceList');
+      list.innerHTML = '';
+      employees.forEach(emp => {
+        if (!emp || !emp.name || isNaN(emp.salary)) return; // Skip invalid entries
+        const div = document.createElement('div');
+        div.className = 'checkbox-group';
+        // Auto-tick all checkboxes if no attendance data exists for this date, otherwise use saved data
+        const isChecked = attendance[date]?.[emp.name] !== undefined ? attendance[date][emp.name] : true;
+        div.innerHTML = `
+          <input type="checkbox" id="${emp.name}-${date}" ${isChecked ? 'checked' : ''} ${isLocked ? 'disabled' : ''}>
+          <label for="${emp.name}-${date}">${emp.name} (₹${emp.salary}/month)</label>
+        `;
+        list.appendChild(div);
+      });
+    }
+
+    function saveAttendance() {
+      const date = document.getElementById('attendanceDate').value;
+      if (!date) {
+        alert('Please select a date.');
+        return;
+      }
+
+      // Save attendance
+      attendance[date] = attendance[date] || {};
+      employees.forEach(emp => {
+        if (!emp || !emp.name) return; // Skip invalid entries
+        attendance[date][emp.name] = document.getElementById(`${emp.name}-${date}`)?.checked || false;
+      });
+      localStorage.setItem('attendance', JSON.stringify(attendance));
+
+      // Lock the date if not already locked
+      if (!lockedDates.includes(date)) {
+        lockedDates.push(date);
+        localStorage.setItem('lockedDates', JSON.stringify(lockedDates));
+      }
+
+      // Reload UI to reflect locked state
+      loadEmployeesForAttendance();
+      alert('Attendance saved for this date!');
+    }
+
+    // Set today's date and load employees on page load
+    window.onload = () => {
+      const today = new Date().toISOString().split('T')[0];
+      document.getElementById('attendanceDate').value = today;
+      document.getElementById('attendanceDate').addEventListener('change', loadEmployeesForAttendance);
+      loadEmployeesForAttendance();
+    };
+  </script>
+</body>
+</html>
