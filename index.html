@@ -11,12 +11,12 @@
     <h1>Login to Salary and Attendance Calculator</h1>
     <div class="card login-card">
       <div class="input-group">
-        <input id="username" type="text" placeholder="Username">
+        <input id="username" type="text" placeholder="Username" autocomplete="username">
       </div>
       <div class="input-group">
-        <input id="password" type="password" placeholder="Password">
+        <input id="password" type="password" placeholder="Password" autocomplete="current-password">
       </div>
-      <button onclick="login()">Login</button>
+      <button onclick="login()" class="primary-btn">Login</button>
       <p id="errorMessage" class="error-message"></p>
     </div>
   </div>
@@ -32,16 +32,25 @@
         window.location.href = 'main.html';
       } else {
         errorMessage.textContent = 'Invalid username or password.';
+        document.getElementById('password').value = '';
       }
     }
 
-    // Clear error message on input
-    document.getElementById('username').addEventListener('input', () => {
-      document.getElementById('errorMessage').textContent = '';
+    // Clear error message on input and handle Enter key
+    document.getElementById('username').addEventListener('input', clearError);
+    document.getElementById('password').addEventListener('input', clearError);
+    document.getElementById('password').addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') login();
     });
-    document.getElementById('password').addEventListener('input', () => {
+
+    function clearError() {
       document.getElementById('errorMessage').textContent = '';
-    });
+    }
+
+    // Focus username field on load
+    window.onload = () => {
+      document.getElementById('username').focus();
+    };
   </script>
 </body>
 </html>

@@ -1,177 +1,203 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Admin Settings</title>
-  <link href="style.css" rel="stylesheet">
-</head>
-<body>
-  <nav>
-    <ul>
-      <li><a href="main.html">Attendance</a></li>
-      <li><a href="employees.html">Employees</a></li>
-      <li><a href="report.html">Monthly Report</a></li>
-      <li><a href="salary.html">Salary Calculator</a></li>
-      <li><a href="settings.html">Settings</a></li>
-      <li><a href="#" onclick="logout()">Logout</a></li>
-    </ul>
+  <!DOCTYPE html>
+  <html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Settings</title>
+    <link href="style.css" rel="stylesheet">
+     <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Bootstrap JS (for toggle) -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  </head>
+  <body>
+    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+    <div class="container-fluid">
+      <a class="navbar-brand" href="#">Jalaram Tools</a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+        aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+
+      <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav ms-auto">
+          <li class="nav-item">
+            <a class="nav-link" href="main.html">Attendance</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="employees.html">Employees</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="report.html">Monthly Report</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="salary.html">Salary Calculator</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="settings.html">Settings</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link text-danger" href="index.html">Logout</a>
+          </li>
+        </ul>
+      </div>
+    </div>
   </nav>
-  <div class="container">
-    <h1>Admin Settings</h1>
+    <div class="container">
+      <h1>Admin Settings</h1>
 
-    <!-- Unlock Dates Section -->
-    <div class="card">
-      <h2>Unlock Dates</h2>
-      <div style="width: 25%;" class="input-group">
-        <input id="dateToUnlock" type="date">
-        <button onclick="unlockDate()">Unlock Date</button>
+      <!-- Unlock Dates Section -->
+      <div class="card">
+        <h2>Unlock Dates</h2>
+        <div style="width: 25%;" class="input-group">
+          <input id="dateToUnlock" type="date">
+          <button onclick="unlockDate()">Unlock Date</button>
+        </div>
+        <div id="unlockedDatesList"></div>
       </div>
-      <div id="unlockedDatesList"></div>
+
+      <!-- Update Attendance Section -->
+      <div class="card">
+        <h2>Update Attendance</h2>
+        <div style="width: 25%;" class="input-group">
+          <input id="updateAttendanceDate" type="date">
+        </div>
+        <div id="updateAttendanceList"></div>
+        <button id="updateSaveButton" onclick="updateAttendance()">Update Attendance</button>
+      </div>
+
+      
     </div>
 
-    <!-- Update Attendance Section -->
-    <div class="card">
-      <h2>Update Attendance</h2>
-      <div style="width: 25%;" class="input-group">
-        <input id="updateAttendanceDate" type="date">
-      </div>
-      <div id="updateAttendanceList"></div>
-      <button id="updateSaveButton" onclick="updateAttendance()">Update Attendance</button>
-    </div>
-
-    
-  </div>
-
-  <script>
-    // Check if user is logged in
-    if (localStorage.getItem('isLoggedIn') !== 'true') {
-      window.location.href = 'login.html';
-    }
-
-    function logout() {
-      localStorage.removeItem('isLoggedIn');
-      window.location.href = 'login.html';
-    }
-
-    let employees = JSON.parse(localStorage.getItem('employees')) || [];
-    let attendance = JSON.parse(localStorage.getItem('attendance')) || {};
-    let lockedDates = JSON.parse(localStorage.getItem('lockedDates')) || [];
-    let unlockedDates = JSON.parse(localStorage.getItem('unlockedDates')) || [];
-
-    // Show currently unlocked dates
-    function showUnlockedDates() {
-      const listDiv = document.getElementById('unlockedDatesList');
-      listDiv.innerHTML = '<h3>Currently Unlocked Dates:</h3>';
-      
-      if (unlockedDates.length === 0) {
-        listDiv.innerHTML += '<p>No dates are currently unlocked</p>';
-        return;
-      }
-      
-      const ul = document.createElement('ul');
-      unlockedDates.forEach(date => {
-        const li = document.createElement('li');
-        li.textContent = date;
-        ul.appendChild(li);
-      });
-      listDiv.appendChild(ul);
-    }
-
-    function unlockDate() {
-      const date = document.getElementById('dateToUnlock').value;
-      if (!date) {
-        alert('Please select a date to unlock.');
-        return;
+    <script>
+      // Check if user is logged in
+      if (localStorage.getItem('isLoggedIn') !== 'true') {
+        window.location.href = 'login.html';
       }
 
-      if (!lockedDates.includes(date)) {
-        alert('This date is not locked.');
-        return;
+      function logout() {
+        localStorage.removeItem('isLoggedIn');
+        window.location.href = 'login.html';
       }
 
-      if (!unlockedDates.includes(date)) {
-        unlockedDates.push(date);
-        localStorage.setItem('unlockedDates', JSON.stringify(unlockedDates));
-        showUnlockedDates();
-        alert(`Date ${date} has been unlocked. You can now modify attendance for this date.`);
+      let employees = JSON.parse(localStorage.getItem('employees')) || [];
+      let attendance = JSON.parse(localStorage.getItem('attendance')) || {};
+      let lockedDates = JSON.parse(localStorage.getItem('lockedDates')) || [];
+      let unlockedDates = JSON.parse(localStorage.getItem('unlockedDates')) || [];
+
+      // Show currently unlocked dates
+      function showUnlockedDates() {
+        const listDiv = document.getElementById('unlockedDatesList');
+        listDiv.innerHTML = '<h3>Currently Unlocked Dates:</h3>';
         
-        // If the unlocked date is currently selected, reload the attendance list
-        const currentDate = document.getElementById('updateAttendanceDate').value;
-        if (currentDate === date) {
-          loadEmployeesForUpdateAttendance();
+        if (unlockedDates.length === 0) {
+          listDiv.innerHTML += '<p>No dates are currently unlocked</p>';
+          return;
         }
-      } else {
-        alert('This date is already unlocked.');
-      }
-    }
-
-    function loadEmployeesForUpdateAttendance() {
-      const date = document.getElementById('updateAttendanceDate').value;
-      const updateSaveButton = document.getElementById('updateSaveButton');
-      if (!date) {
-        updateSaveButton.disabled = true;
-        return;
+        
+        const ul = document.createElement('ul');
+        unlockedDates.forEach(date => {
+          const li = document.createElement('li');
+          li.textContent = date;
+          ul.appendChild(li);
+        });
+        listDiv.appendChild(ul);
       }
 
-      const isLocked = lockedDates.includes(date) && !unlockedDates.includes(date);
-      updateSaveButton.disabled = isLocked;
-
-      const list = document.getElementById('updateAttendanceList');
-      list.innerHTML = '';
-      employees.forEach(emp => {
-        if (!emp || !emp.name || isNaN(emp.salary)) return; // Skip invalid entries
-        const div = document.createElement('div');
-        div.className = 'checkbox-group';
-        const isChecked = attendance[date]?.[emp.name] !== undefined ? attendance[date][emp.name] : true;
-        div.innerHTML = `
-          <input type="checkbox" id="update-${emp.name}-${date}" ${isChecked ? 'checked' : ''} ${isLocked ? 'disabled' : ''}>
-          <label for="update-${emp.name}-${date}">${emp.name} (₹${emp.salary}/month)</label>
-        `;
-        list.appendChild(div);
-      });
-    }
-
-    function updateAttendance() {
-      const date = document.getElementById('updateAttendanceDate').value;
-      if (!date) {
-        alert('Please select a date.');
-        return;
-      }
-
-      // Update attendance
-      attendance[date] = attendance[date] || {};
-      employees.forEach(emp => {
-        if (!emp || !emp.name) return; // Skip invalid entries
-        const checkbox = document.getElementById(`update-${emp.name}-${date}`);
-        if (checkbox) {
-          attendance[date][emp.name] = checkbox.checked;
+      function unlockDate() {
+        const date = document.getElementById('dateToUnlock').value;
+        if (!date) {
+          alert('Please select a date to unlock.');
+          return;
         }
-      });
-      localStorage.setItem('attendance', JSON.stringify(attendance));
 
-      // Re-lock the date after update if it was unlocked
-      if (unlockedDates.includes(date)) {
-        unlockedDates = unlockedDates.filter(d => d !== date);
-        localStorage.setItem('unlockedDates', JSON.stringify(unlockedDates));
+        if (!lockedDates.includes(date)) {
+          alert('This date is not locked.');
+          return;
+        }
+
+        if (!unlockedDates.includes(date)) {
+          unlockedDates.push(date);
+          localStorage.setItem('unlockedDates', JSON.stringify(unlockedDates));
+          showUnlockedDates();
+          alert(`Date ${date} has been unlocked. You can now modify attendance for this date.`);
+          
+          // If the unlocked date is currently selected, reload the attendance list
+          const currentDate = document.getElementById('updateAttendanceDate').value;
+          if (currentDate === date) {
+            loadEmployeesForUpdateAttendance();
+          }
+        } else {
+          alert('This date is already unlocked.');
+        }
+      }
+
+      function loadEmployeesForUpdateAttendance() {
+        const date = document.getElementById('updateAttendanceDate').value;
+        const updateSaveButton = document.getElementById('updateSaveButton');
+        if (!date) {
+          updateSaveButton.disabled = true;
+          return;
+        }
+
+        const isLocked = lockedDates.includes(date) && !unlockedDates.includes(date);
+        updateSaveButton.disabled = isLocked;
+
+        const list = document.getElementById('updateAttendanceList');
+        list.innerHTML = '';
+        employees.forEach(emp => {
+          if (!emp || !emp.name || isNaN(emp.salary)) return; // Skip invalid entries
+          const div = document.createElement('div');
+          div.className = 'checkbox-group';
+          const isChecked = attendance[date]?.[emp.name] !== undefined ? attendance[date][emp.name] : true;
+          div.innerHTML = `
+            <input type="checkbox" id="update-${emp.name}-${date}" ${isChecked ? 'checked' : ''} ${isLocked ? 'disabled' : ''}>
+            <label for="update-${emp.name}-${date}">${emp.name} (₹${emp.salary}/month)</label>
+          `;
+          list.appendChild(div);
+        });
+      }
+
+      function updateAttendance() {
+        const date = document.getElementById('updateAttendanceDate').value;
+        if (!date) {
+          alert('Please select a date.');
+          return;
+        }
+
+        // Update attendance
+        attendance[date] = attendance[date] || {};
+        employees.forEach(emp => {
+          if (!emp || !emp.name) return; // Skip invalid entries
+          const checkbox = document.getElementById(`update-${emp.name}-${date}`);
+          if (checkbox) {
+            attendance[date][emp.name] = checkbox.checked;
+          }
+        });
+        localStorage.setItem('attendance', JSON.stringify(attendance));
+
+        // Re-lock the date after update if it was unlocked
+        if (unlockedDates.includes(date)) {
+          unlockedDates = unlockedDates.filter(d => d !== date);
+          localStorage.setItem('unlockedDates', JSON.stringify(unlockedDates));
+          showUnlockedDates();
+        }
+
+        loadEmployeesForUpdateAttendance();
+        alert('Attendance updated for this date! Date is now re-locked.');
+      }
+
+      // Load settings on page load
+      window.onload = () => {
         showUnlockedDates();
-      }
-
-      loadEmployeesForUpdateAttendance();
-      alert('Attendance updated for this date! Date is now re-locked.');
-    }
-
-    // Load settings on page load
-    window.onload = () => {
-      showUnlockedDates();
-      document.getElementById('updateAttendanceDate').addEventListener('change', loadEmployeesForUpdateAttendance);
-      
-      // Set default date to today
-      const today = new Date().toISOString().split('T')[0];
-      document.getElementById('updateAttendanceDate').value = today;
-      document.getElementById('dateToUnlock').value = today;
-      loadEmployeesForUpdateAttendance();
-    };
-  </script>
-</body>
-</html>
+        document.getElementById('updateAttendanceDate').addEventListener('change', loadEmployeesForUpdateAttendance);
+        
+        // Set default date to today
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('updateAttendanceDate').value = today;
+        document.getElementById('dateToUnlock').value = today;
+        loadEmployeesForUpdateAttendance();
+      };
+    </script>
+  </body>
+  </html>
