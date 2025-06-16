@@ -20,8 +20,19 @@
   <div class="container">
     <h1>Admin Settings</h1>
 
-    <!-- Update Attendance Section -->
+    <!-- Unlock Dates Section -->
     <div class="card">
+      <h2>Unlock Dates</h2>
+      <div style="width: 25%;" class="input-group">
+        <input id="dateToUnlock" type="date">
+        <button onclick="unlockDate()">Unlock Date</button>
+      </div>
+      <div id="lockedDatesList"></div>
+    </div>
+  </div>
+
+    <!-- Update Attendance Section -->
+    <div style="width: 70%; margin-left: 14%;" class="card">
       <h2>Update Attendance</h2>
       <div style="width: 25%;" class="input-group">
         <input id="updateAttendanceDate" type="date">
@@ -29,7 +40,8 @@
       <div id="updateAttendanceList"></div>
       <button id="updateSaveButton" onclick="updateAttendance()">Update Attendance</button>
     </div>
-  </div>
+
+    
 
   <script>
     // Check if user is logged in
@@ -47,31 +59,50 @@
     let lockedDates = JSON.parse(localStorage.getItem('lockedDates')) || [];
     let unlockedDates = JSON.parse(localStorage.getItem('unlockedDates')) || [];
 
-    // Populate locked dates dropdown
-    function loadLockedDates() {
-      const select = document.getElementById('lockedDateSelect');
-      select.innerHTML = '<option value="">Select a date to unlock</option>';
+    // Show currently locked dates
+    function showLockedDates() {
+      const listDiv = document.getElementById('lockedDatesList');
+      listDiv.innerHTML = '<h3>Currently Locked Dates:</h3>';
+      
+      if (lockedDates.length === 0) {
+        listDiv.innerHTML += '<p>No dates are currently locked</p>';
+        return;
+      }
+      
+      const ul = document.createElement('ul');
       lockedDates.forEach(date => {
-        if (!unlockedDates.includes(date)) {
-          const option = document.createElement('option');
-          option.value = date;
-          option.textContent = date;
-          select.appendChild(option);
-        }
+        const li = document.createElement('li');
+        li.textContent = date + (unlockedDates.includes(date) ? ' (unlocked)' : '');
+        ul.appendChild(li);
       });
+      listDiv.appendChild(ul);
     }
 
     function unlockDate() {
-      const date = document.getElementById('lockedDateSelect').value;
+      const date = document.getElementById('dateToUnlock').value;
       if (!date) {
         alert('Please select a date to unlock.');
         return;
       }
+
+      if (!lockedDates.includes(date)) {
+        alert('This date is not locked.');
+        return;
+      }
+
       if (!unlockedDates.includes(date)) {
         unlockedDates.push(date);
         localStorage.setItem('unlockedDates', JSON.stringify(unlockedDates));
-        loadLockedDates();
-        alert(`Date ${date} has been unlocked. You can now modify attendance on the Attendance page.`);
+        showLockedDates();
+        alert(`Date ${date} has been unlocked. You can now modify attendance for this date.`);
+        
+        // If the unlocked date is currently selected, reload the attendance list
+        const currentDate = document.getElementById('updateAttendanceDate').value;
+        if (currentDate === date) {
+          loadEmployeesForUpdateAttendance();
+        }
+      } else {
+        alert('This date is already unlocked.');
       }
     }
 
@@ -112,25 +143,34 @@
       attendance[date] = attendance[date] || {};
       employees.forEach(emp => {
         if (!emp || !emp.name) return; // Skip invalid entries
-        attendance[date][emp.name] = document.getElementById(`update-${emp.name}-${date}`)?.checked || false;
+        const checkbox = document.getElementById(`update-${emp.name}-${date}`);
+        if (checkbox) {
+          attendance[date][emp.name] = checkbox.checked;
+        }
       });
       localStorage.setItem('attendance', JSON.stringify(attendance));
 
-      // Re-lock the date after update
+      // Re-lock the date after update if it was unlocked
       if (unlockedDates.includes(date)) {
         unlockedDates = unlockedDates.filter(d => d !== date);
         localStorage.setItem('unlockedDates', JSON.stringify(unlockedDates));
       }
 
       loadEmployeesForUpdateAttendance();
-      loadLockedDates();
+      showLockedDates();
       alert('Attendance updated for this date! Date is now re-locked.');
     }
 
     // Load settings on page load
     window.onload = () => {
-      loadLockedDates();
+      showLockedDates();
       document.getElementById('updateAttendanceDate').addEventListener('change', loadEmployeesForUpdateAttendance);
+      
+      // Set default date to today
+      const today = new Date().toISOString().split('T')[0];
+      document.getElementById('updateAttendanceDate').value = today;
+      document.getElementById('dateToUnlock').value = today;
+      loadEmployeesForUpdateAttendance();
     };
   </script>
 </body>
