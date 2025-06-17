@@ -35,9 +35,11 @@
                     <input type="number" id="loanAmount" placeholder="Total Loan Amount (₹)"
                         class="form-control mb-2" />
                     <input type="number" id="loanEMI" placeholder="Monthly EMI (₹)" class="form-control mb-2" />
+                    <button onclick="addLoan()" class="btn btn-primary mb-2">Add Loan</button>
+                    <br><br>
                     <input type="number" id="loanCustomReturn" placeholder="Custom Return (₹)"
                         class="form-control mb-2" />
-                    <button onclick="addLoan()" class="btn btn-primary mb-2">Add Loan</button>
+                    
                     <button onclick="applyCustomReturn()" class="btn btn-warning mb-2">Apply Custom Return</button>
                     <h5 class="mt-3">Loan History</h5>
                     <ul id="loanList" class="list-group mt-2"></ul>
