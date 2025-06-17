@@ -30,44 +30,23 @@ h2 {
   margin-bottom: 15px;
 }
 
+h4 {
+  color: #2c5282;
+  margin-bottom: 15px;
+}
+
 /* Navigation */
-nav {
-  background-color: #1a3c6d;
-  padding: 15px;
+.navbar {
   animation: fadeIn 0.5s ease-in-out;
 }
 
-nav ul {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  justify-content: center;
-  gap: 20px;
-}
-
-nav a {
-  color: white;
-  text-decoration: none;
-  font-size: 1.1rem;
-  padding: 10px;
+.navbar-brand, .nav-link {
   transition: color 0.3s ease, transform 0.3s ease;
 }
 
-nav a:hover {
-  color: #a3bffa;
+.nav-link:hover {
+  color: #a3bffa !important;
   transform: scale(1.1);
-}
-
-/* Hamburger Menu for Mobile */
-.hamburger {
-  display: none;
-  font-size: 1.5rem;
-  color: white;
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 10px;
 }
 
 /* Card Styling */
@@ -106,7 +85,7 @@ select {
 }
 
 button {
-  padding: 12px 24px; /* Larger padding for touch targets */
+  padding: 12px 24px;
   border: none;
   border-radius: 4px;
   background-color: #2b6cb0;
@@ -121,15 +100,15 @@ button:hover {
   transform: scale(1.05);
 }
 
-button.red {
+button.red, .btn-danger {
   background-color: #c53030;
 }
 
-button.red:hover {
+button.red:hover, .btn-danger:hover {
   background-color: #9b2c2c;
 }
 
-button:disabled {
+button:disabled, .btn:disabled {
   background-color: #cccccc;
   cursor: not-allowed;
   transform: none;
@@ -162,15 +141,76 @@ li {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 5px 0;
+  padding: 8px 0;
 }
 
-/* Month Info */
-.month-info {
+.employee-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+}
+
+.emp-name {
+  font-weight: bold;
+}
+
+.emp-salary {
+  color: #718096;
+  margin-left: 10px;
+}
+
+.attendance-status {
+  margin-left: 10px;
+  font-weight: bold;
+  color: #2f855a;
+}
+
+.attendance-status.absent {
+  color: #c53030;
+}
+
+.shift-toggle-btn {
+  padding: 4px 8px;
+  font-size: 0.8rem;
+  margin-left: 10px;
+}
+
+.shift-section {
+  margin-top: 20px;
+  border-top: 1px solid #e2e8f0;
+  padding-top: 10px;
+}
+
+.no-data {
+  color: #718096;
+  text-align: center;
+  margin: 20px 0;
+}
+
+.attendance-info {
   margin-bottom: 10px;
   font-size: 1.1rem;
   color: #2c5282;
   font-weight: bold;
+}
+
+/* Toast Styling */
+.toast {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background-color: #2f855a;
+  color: white;
+  padding: 10px 20px;
+  border-radius: 4px;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  z-index: 1000;
+}
+
+.toast.show {
+  opacity: 1;
 }
 
 /* Table */
@@ -237,9 +277,6 @@ tr:hover {
   .container {
     padding: 15px;
   }
-  nav ul {
-    gap: 15px;
-  }
 }
 
 @media (max-width: 768px) {
@@ -252,21 +289,16 @@ tr:hover {
   h2 {
     font-size: 1.5rem;
   }
-  nav ul {
+  .employee-label {
     flex-direction: column;
-    gap: 10px;
-    text-align: center;
-    display: none; /* Hidden by default on mobile */
+    align-items: flex-start;
   }
-  nav ul.active {
-    display: flex; /* Show when hamburger is clicked */
-  }
-  .hamburger {
-    display: block;
+  .emp-salary, .attendance-status {
+    margin-left: 0;
   }
   table {
     display: block;
-    overflow-x: auto; /* Scrollable tables on small screens */
+    overflow-x: auto;
     white-space: nowrap;
   }
   th, td {
@@ -277,24 +309,20 @@ tr:hover {
     margin: 20px;
     padding: 15px;
   }
-  button {
-    width: 100%; /* Full-width buttons on smaller screens */
+  button, .btn {
+    width: 100%;
   }
 }
 
 @media (max-width: 480px) {
   body {
-    font-size: 14px; /* Smaller base font for very small screens */
+    font-size: 14px;
   }
   h1 {
     font-size: 1.8rem;
   }
   h2 {
     font-size: 1.3rem;
-  }
-  nav a {
-    font-size: 1rem;
-    padding: 8px;
   }
   .card {
     padding: 15px;
@@ -308,7 +336,7 @@ tr:hover {
     font-size: 0.9rem;
     padding: 8px;
   }
-  .month-info {
+  .attendance-info {
     font-size: 1rem;
   }
   .error-message, .lock-message {

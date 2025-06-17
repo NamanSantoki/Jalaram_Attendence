@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Loan & Advance Management</title>
+    <link href="style.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</head>
+
+<body>
+    <div class="container mt-4">
+        <h1 class="text-center mb-4">Employee Loan & Advance</h1>
+        <div class="row">
+            <!-- Advance Section -->
+            <div class="col-md-6">
+                <div class="card p-3">
+                    <h3>Advance</h3>
+                    <select id="advanceEmployee" class="form-control mb-2" onchange="loadAdvanceList()"></select>
+                    <input type="number" id="advanceAmount" placeholder="Advance Amount (₹)"
+                        class="form-control mb-2" />
+                    <button onclick="addAdvance()" class="btn btn-success">Add Advance</button>
+                    <h5 class="mt-3">Advance History</h5>
+                    <ul id="advanceList" class="list-group mt-2"></ul>
+                </div>
+            </div>
+
+            <!-- Loan Section -->
+            <div class="col-md-6">
+                <div class="card p-3">
+                    <h3>Loan</h3>
+                    <select id="loanEmployee" class="form-control mb-2" onchange="loadLoanList()"></select>
+                    <input type="number" id="loanAmount" placeholder="Total Loan Amount (₹)"
+                        class="form-control mb-2" />
+                    <input type="number" id="loanEMI" placeholder="Monthly EMI (₹)" class="form-control mb-2" />
+                    <input type="number" id="loanCustomReturn" placeholder="Custom Return (₹)"
+                        class="form-control mb-2" />
+                    <button onclick="addLoan()" class="btn btn-primary mb-2">Add Loan</button>
+                    <button onclick="applyCustomReturn()" class="btn btn-warning mb-2">Apply Custom Return</button>
+                    <h5 class="mt-3">Loan History</h5>
+                    <ul id="loanList" class="list-group mt-2"></ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const employees = JSON.parse(localStorage.getItem("employees")) || [];
+        const advances = JSON.parse(localStorage.getItem("advances")) || {};
+        const loans = JSON.parse(localStorage.getItem("loans")) || {};
+        const returns = JSON.parse(localStorage.getItem("loanReturns")) || {};
+
+        function populateEmployeeDropdowns() {
+            const advanceDropdown = document.getElementById("advanceEmployee");
+            const loanDropdown = document.getElementById("loanEmployee");
+            [advanceDropdown, loanDropdown].forEach(dropdown => {
+                dropdown.innerHTML = '<option value="">Select Employee</option>';
+                employees.forEach(emp => {
+                    const option = document.createElement("option");
+                    option.value = emp.name;
+                    option.textContent = emp.name;
+                    dropdown.appendChild(option);
+                });
+            });
+        }
+
+        function addAdvance() {
+            const name = document.getElementById("advanceEmployee").value;
+            const amount = parseFloat(document.getElementById("advanceAmount").value);
+            if (!name || isNaN(amount) || amount <= 0) return alert("Enter valid employee and amount.");
+            advances[name] = advances[name] || [];
+            advances[name].push({ amount, date: new Date().toISOString() });
+            localStorage.setItem("advances", JSON.stringify(advances));
+            document.getElementById("advanceAmount").value = "";
+            loadAdvanceList();
+        }
+
+        function addLoan() {
+            const name = document.getElementById("loanEmployee").value;
+            const amount = parseFloat(document.getElementById("loanAmount").value);
+            const emi = parseFloat(document.getElementById("loanEMI").value);
+            if (!name || isNaN(amount) || isNaN(emi) || amount <= 0 || emi <= 0) return alert("Enter valid inputs.");
+            loans[name] = loans[name] || [];
+            loans[name].push({ amount, emi, remaining: amount, date: new Date().toISOString() });
+            localStorage.setItem("loans", JSON.stringify(loans));
+            document.getElementById("loanAmount").value = "";
+            document.getElementById("loanEMI").value = "";
+            loadLoanList();
+        }
+
+        function applyCustomReturn() {
+            const name = document.getElementById("loanEmployee").value;
+            let returnAmt = parseFloat(document.getElementById("loanCustomReturn").value);
+            if (!name || isNaN(returnAmt) || returnAmt <= 0) return alert("Enter valid return amount.");
+            if (!loans[name]) return alert("No loans found for this employee.");
+
+            const today = new Date().toISOString();
+            returns[name] = returns[name] || [];
+
+            for (const loan of loans[name]) {
+                if (returnAmt <= 0) break;
+                if (loan.remaining > 0) {
+                    const deduct = Math.min(returnAmt, loan.remaining);
+                    loan.remaining -= deduct;
+                    returnAmt -= deduct;
+                    returns[name].push({ amount: deduct, date: today });
+                }
+            }
+
+            localStorage.setItem("loans", JSON.stringify(loans));
+            localStorage.setItem("loanReturns", JSON.stringify(returns));
+            document.getElementById("loanCustomReturn").value = "";
+            loadLoanList();
+        }
+
+        function deleteLoan(name, index) {
+            if (!confirm("Delete this loan?")) return;
+            loans[name].splice(index, 1);
+            localStorage.setItem("loans", JSON.stringify(loans));
+            loadLoanList();
+        }
+        function deleteLoanReturn(name, index) {
+            if (!confirm("Delete this return entry?")) return;
+            returns[name].splice(index, 1);
+            localStorage.setItem("loanReturns", JSON.stringify(returns));
+            loadLoanList();
+        }
+
+
+        function deleteAdvance(name, index) {
+            if (!confirm("Delete this advance?")) return;
+            advances[name].splice(index, 1);
+            localStorage.setItem("advances", JSON.stringify(advances));
+            loadAdvanceList();
+        }
+
+        function loadAdvanceList() {
+            const name = document.getElementById("advanceEmployee").value;
+            const list = document.getElementById("advanceList");
+            list.innerHTML = "";
+            if (!name || !advances[name]) return;
+
+            const allAdvances = advances[name];
+            const total = allAdvances.reduce((sum, a) => sum + a.amount, 0);
+
+            const summary = document.createElement("li");
+            summary.className = "list-group-item";
+            summary.innerHTML = `<strong>${name}'s Advance Summary:</strong><br>Total Advance Taken: ₹${total}
+        <button class='btn btn-sm btn-info float-end mt-2' onclick=\"toggleAdvanceDetails()\">Info</button>`;
+            list.appendChild(summary);
+
+            const detailList = document.createElement("ul");
+            detailList.id = "advanceDetails";
+            detailList.style.display = "none";
+            detailList.className = "list-group list-group-flush";
+
+            allAdvances.forEach((entry, i) => {
+                const li = document.createElement("li");
+                li.className = "list-group-item d-flex justify-content-between";
+                li.innerHTML = `₹${entry.amount} on ${new Date(entry.date).toLocaleDateString()}
+          <button class='btn btn-sm btn-danger' onclick="deleteAdvance('${name}', ${i})">Delete</button>`;
+                detailList.appendChild(li);
+            });
+
+            list.appendChild(detailList);
+        }
+
+        function loadLoanList() {
+            const name = document.getElementById("loanEmployee").value;
+            const list = document.getElementById("loanList");
+            list.innerHTML = "";
+            if (!name || !loans[name]) return;
+
+            const allLoans = loans[name];
+            const totalTaken = allLoans.reduce((sum, l) => sum + l.amount, 0);
+            const totalRemaining = allLoans.reduce((sum, l) => sum + l.remaining, 0);
+            const totalReturned = totalTaken - totalRemaining;
+
+            const summary = document.createElement("li");
+            summary.className = "list-group-item";
+            summary.innerHTML = `<strong>${name}'s Loan Summary:</strong><br>
+        Total Loan Taken: ₹${totalTaken}<br>
+        Total Returned: ₹${totalReturned}<br>
+        <strong>Remaining Balance: ₹${totalRemaining}</strong>
+        <button class='btn btn-sm btn-info float-end mt-2' onclick="toggleLoanDetails()">Info</button>`;
+            list.appendChild(summary);
+
+            const detailList = document.createElement("ul");
+            detailList.id = "loanDetails";
+            detailList.style.display = "none";
+            detailList.className = "list-group list-group-flush";
+
+            allLoans.forEach((entry, i) => {
+                const li = document.createElement("li");
+                li.className = "list-group-item d-flex justify-content-between";
+                li.innerHTML = `₹${entry.amount} | EMI: ₹${entry.emi} | Remaining: ₹${entry.remaining} on ${new Date(entry.date).toLocaleDateString()}
+          <button class='btn btn-sm btn-danger' onclick="deleteLoan('${name}', ${i})">Delete</button>`;
+                detailList.appendChild(li);
+            });
+
+            if (returns[name]) {
+                returns[name].forEach((entry, i) => {
+                    const li = document.createElement("li");
+                    li.className = "list-group-item d-flex justify-content-between text-success";
+                    li.innerHTML = `
+      Returned ₹${entry.amount} on ${new Date(entry.date).toLocaleDateString()}
+      <button class='btn btn-sm btn-danger' onclick="deleteLoanReturn('${name}', ${i})">Delete</button>
+    `;
+                    detailList.appendChild(li);
+                });
+            }
+            list.appendChild(detailList);
+        }
+
+        function toggleLoanDetails() {
+            const el = document.getElementById("loanDetails");
+            if (el) el.style.display = el.style.display === "none" ? "block" : "none";
+        }
+
+        function toggleAdvanceDetails() {
+            const el = document.getElementById("advanceDetails");
+            if (el) el.style.display = el.style.display === "none" ? "block" : "none";
+        }
+
+        window.onload = populateEmployeeDropdowns;
+    </script>
+</body>
+
+</html>

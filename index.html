@@ -3,54 +3,35 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Login - Salary and Attendance Calculator</title>
-  <link href="style.css" rel="stylesheet">
+  <title>Jalaram_Attendance</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <div class="container">
-    <h1>Jalaram_Attendence</h1>
     <div class="card login-card">
-      <div class="input-group">
-        <input id="username" type="text" placeholder="Username" autocomplete="username">
-      </div>
-      <div class="input-group">
-        <input id="password" type="password" placeholder="Password" autocomplete="current-password">
-      </div>
-      <button onclick="login()" class="primary-btn">Login</button>
-      <p id="errorMessage" class="error-message"></p>
+      <h1>Login</h1>
+      <form id="login-form">
+        <div class="input-group">
+          <input type="text" id="username" placeholder="Username" required>
+          <input type="password" id="password" placeholder="Password" required>
+          <button type="submit">Login</button>
+        </div>
+      </form>
+      <div class="error-message" id="error-message"></div>
     </div>
   </div>
-
   <script>
-    function login() {
-      const username = document.getElementById('username').value.trim();
-      const password = document.getElementById('password').value.trim();
-      const errorMessage = document.getElementById('errorMessage');
-
-      if (username === "Dinesh" && password === "Jalaram") {
-        localStorage.setItem('isLoggedIn', 'true');
+    document.getElementById('login-form').addEventListener('submit', function(event) {
+      event.preventDefault();
+      const username = document.getElementById('username').value;
+      const password = document.getElementById('password').value;
+      // Simple validation (replace with actual auth logic)
+      if (username === 'admin' && password === 'password') {
         window.location.href = 'main.html';
       } else {
-        errorMessage.textContent = 'Invalid username or password.';
-        document.getElementById('password').value = '';
+        document.getElementById('error-message').textContent = 'Invalid username or password';
       }
-    }
-
-    // Clear error message on input and handle Enter key
-    document.getElementById('username').addEventListener('input', clearError);
-    document.getElementById('password').addEventListener('input', clearError);
-    document.getElementById('password').addEventListener('keypress', (e) => {
-      if (e.key === 'Enter') login();
     });
-
-    function clearError() {
-      document.getElementById('errorMessage').textContent = '';
-    }
-
-    // Focus username field on load
-    window.onload = () => {
-      document.getElementById('username').focus();
-    };
   </script>
 </body>
 </html>

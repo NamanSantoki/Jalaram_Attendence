@@ -5,9 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Employee Management</title>
   <link href="style.css" rel="stylesheet">
-   <!-- Bootstrap CSS -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-  <!-- Bootstrap JS (for toggle) -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </head>
 <body>
@@ -18,7 +16,6 @@
         aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
         <span class="navbar-toggler-icon"></span>
       </button>
-
       <div class="collapse navbar-collapse" id="navbarNav">
         <ul class="navbar-nav ms-auto">
           <li class="nav-item">
@@ -31,7 +28,7 @@
             <a class="nav-link" href="report.html">Monthly Report</a>
           </li>
           <li class="nav-item">
-            <a class="nav-link" href="salary.html">Salary Calculator</a>
+            <a class="nav-link" href="Loan&Adv.html">Loan</a>
           </li>
           <li class="nav-item">
             <a class="nav-link" href="settings.html">Settings</a>
@@ -43,67 +40,126 @@
       </div>
     </div>
   </nav>
+
   <div class="container">
     <h1>Employee Management</h1>
-    
-    <!-- Add Employee Form -->
     <div class="card">
       <h2>Add Employee</h2>
       <div class="input-group">
-        <input id="employeeName" type="text" placeholder="Employee Name">
-        <input id="employeeSalary" type="number" placeholder="Monthly Salary (₹)" min="0">
-        <button onclick="addEmployee()">Add</button>
+        <input type="text" id="employeeName" placeholder="Employee Name" class="form-control">
+        <input type="number" id="basic" placeholder="Basic Salary (₹)" class="form-control salary-input">
+        <input type="number" id="hra" placeholder="HRA (₹)" class="form-control salary-input">
+        <input type="number" id="conveyance" placeholder="Conveyance (₹)" class="form-control salary-input">
+        <input type="number" id="others" placeholder="Others (₹)" class="form-control salary-input">
+        <button onclick="addEmployee()" class="btn btn-primary">Add</button>
       </div>
-    </div>
-
-    <!-- Employee List -->
-    <div class="card">
+      <div class="total-salary-display">
+        Total Salary: <span id="totalSalaryDisplay">₹0</span>
+      </div>
+      <div id="errorMessage" class="error-message"></div>
       <h2>Employee List</h2>
-      <ul id="employeeList"></ul>
+      <table id="employeeList" class="employee-table table table-bordered">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Basic (₹)</th>
+            <th>HRA (₹)</th>
+            <th>Conveyance (₹)</th>
+            <th>Others (₹)</th>
+            <th>Total Salary (₹)</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
     </div>
   </div>
-
   <script>
-    let employees = JSON.parse(localStorage.getItem('employees')) || [];
-
-    // Validate and clean employee data on load
-    employees = employees.filter(emp => emp && typeof emp === 'object' && emp.name && !isNaN(emp.salary));
-    localStorage.setItem('employees', JSON.stringify(employees));
-
-    function addEmployee() {
-      const name = document.getElementById('employeeName').value.trim();
-      const salary = parseFloat(document.getElementById('employeeSalary').value);
-      if (name && !isNaN(salary) && salary >= 0 && !employees.some(emp => emp.name === name)) {
-        employees.push({ name, salary });
-        localStorage.setItem('employees', JSON.stringify(employees));
-        document.getElementById('employeeName').value = '';
-        document.getElementById('employeeSalary').value = '';
-        updateEmployeeList();
-      } else {
-        alert('Please enter a unique employee name and a valid monthly salary (₹).');
-      }
+    if (localStorage.getItem('isLoggedIn') !== 'true') {
+      window.location.href = 'index.html';
     }
 
-    function removeEmployee(name) {
-      employees = employees.filter(emp => emp.name !== name);
+    function updateTotalSalary() {
+      const basic = parseFloat(document.getElementById('basic').value) || 0;
+      const hra = parseFloat(document.getElementById('hra').value) || 0;
+      const conveyance = parseFloat(document.getElementById('conveyance').value) || 0;
+      const others = parseFloat(document.getElementById('others').value) || 0;
+      const total = (basic + hra + conveyance + others).toFixed(2);
+      document.getElementById('totalSalaryDisplay').textContent = `₹${total}`;
+    }
+
+    function loadEmployees() {
+      const tbody = document.getElementById('employeeList').querySelector('tbody');
+      let employees = JSON.parse(localStorage.getItem('employees')) || [];
+      employees = employees.filter(emp => emp && typeof emp === 'object' && emp.name && !isNaN(emp.basic) && !isNaN(emp.hra) && !isNaN(emp.conveyance) && !isNaN(emp.others) && !isNaN(emp.totalSalary));
       localStorage.setItem('employees', JSON.stringify(employees));
-      updateEmployeeList();
-    }
+      tbody.innerHTML = '';
 
-    function updateEmployeeList() {
-      const list = document.getElementById('employeeList');
-      list.innerHTML = '';
-      employees.forEach(emp => {
-        if (!emp || !emp.name || isNaN(emp.salary)) return; // Skip invalid entries
-        const li = document.createElement('li');
-        li.innerHTML = `${emp.name} (₹${emp.salary}/month) <button class="red" onclick="removeEmployee('${emp.name}')">Remove</button>`;
-        list.appendChild(li);
+      if (employees.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" class="no-data">No employees added yet.</td></tr>';
+        return;
+      }
+
+      employees.forEach((emp, index) => {
+        const tr = document.createElement('tr');
+        tr.className = index % 2 === 0 ? 'even-row' : 'odd-row';
+        tr.innerHTML = `
+          <td>${emp.name}</td>
+          <td>₹${emp.basic.toFixed(2)}</td>
+          <td>₹${emp.hra.toFixed(2)}</td>
+          <td>₹${emp.conveyance.toFixed(2)}</td>
+          <td>₹${emp.others.toFixed(2)}</td>
+          <td>₹${emp.totalSalary.toFixed(2)}</td>
+          <td><button class="btn btn-sm btn-danger" onclick="deleteEmployee('${emp.name}')">Delete</button></td>
+        `;
+        tbody.appendChild(tr);
       });
     }
 
-    // Load employee list on page load
+    function addEmployee() {
+      const name = document.getElementById('employeeName').value.trim();
+      const basic = parseFloat(document.getElementById('basic').value);
+      const hra = parseFloat(document.getElementById('hra').value);
+      const conveyance = parseFloat(document.getElementById('conveyance').value);
+      const others = parseFloat(document.getElementById('others').value);
+      const errorMessage = document.getElementById('errorMessage');
+
+      if (!name || isNaN(basic) || isNaN(hra) || isNaN(conveyance) || isNaN(others) || basic < 0 || hra < 0 || conveyance < 0 || others < 0) {
+        errorMessage.textContent = 'Please enter valid name and salary components.';
+        return;
+      }
+
+      let employees = JSON.parse(localStorage.getItem('employees')) || [];
+      if (employees.find(emp => emp.name === name)) {
+        errorMessage.textContent = 'Employee already exists.';
+        return;
+      }
+
+      const totalSalary = basic + hra + conveyance + others;
+      employees.push({ name, basic, hra, conveyance, others, totalSalary });
+      localStorage.setItem('employees', JSON.stringify(employees));
+      document.getElementById('employeeName').value = '';
+      document.getElementById('basic').value = '';
+      document.getElementById('hra').value = '';
+      document.getElementById('conveyance').value = '';
+      document.getElementById('others').value = '';
+      document.getElementById('totalSalaryDisplay').textContent = '₹0';
+      errorMessage.textContent = '';
+      loadEmployees();
+    }
+
+    function deleteEmployee(name) {
+      if (!confirm(`Delete ${name}?`)) return;
+      let employees = JSON.parse(localStorage.getItem('employees')) || [];
+      employees = employees.filter(emp => emp.name !== name);
+      localStorage.setItem('employees', JSON.stringify(employees));
+      loadEmployees();
+    }
+
     window.onload = () => {
-      updateEmployeeList();
+      loadEmployees();
+      const salaryInputs = document.querySelectorAll('.salary-input');
+      salaryInputs.forEach(input => input.addEventListener('input', updateTotalSalary));
     };
   </script>
 </body>
