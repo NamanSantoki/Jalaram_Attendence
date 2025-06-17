@@ -5,6 +5,60 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Jalaram_Attendance</title>
   <link rel="stylesheet" href="style.css">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f0f2f5;
+      margin: 0;
+      padding: 0;
+    }
+    .container {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+    .login-card {
+      background: white;
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0 0 15px rgba(0,0,0,0.1);
+      width: 300px;
+    }
+    .login-card h1 {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    .input-group {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+    }
+    .input-group input {
+      padding: 10px;
+      font-size: 16px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+    .input-group button {
+      padding: 10px;
+      font-size: 16px;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+    .input-group button:hover {
+      background-color: #0056b3;
+    }
+    .error-message {
+      color: red;
+      margin-top: 15px;
+      text-align: center;
+    }
+  </style>
 </head>
 <body>
   <div class="container">
@@ -20,13 +74,14 @@
       <div class="error-message" id="error-message"></div>
     </div>
   </div>
+
   <script>
     document.getElementById('login-form').addEventListener('submit', function(event) {
       event.preventDefault();
       const username = document.getElementById('username').value;
       const password = document.getElementById('password').value;
-      // Simple validation (replace with actual auth logic)
-      if (username === 'admin' && password === 'password') {
+
+      if (username === 'Dinesh' && password === 'Jalaram') {
         window.location.href = 'main.html';
       } else {
         document.getElementById('error-message').textContent = 'Invalid username or password';

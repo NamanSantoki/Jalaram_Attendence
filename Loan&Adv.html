@@ -206,7 +206,7 @@
                     li.className = "list-group-item d-flex justify-content-between text-success";
                     li.innerHTML = `
       Returned ₹${entry.amount} on ${new Date(entry.date).toLocaleDateString()}
-      <button class='btn btn-sm btn-danger' onclick="deleteLoanReturn('${name}', ${i})">Delete</button>
+      <button class='btn btn-sm btn -danger' onclick="deleteLoanReturn('${name}', ${i})">Delete</button>
     `;
                     detailList.appendChild(li);
                 });
