@@ -75,9 +75,7 @@
     </div>
   </div>
   <script>
-    if (localStorage.getItem('isLoggedIn') !== 'true') {
-      window.location.href = 'index.html';
-    }
+    
 
     function updateTotalSalary() {
       const basic = parseFloat(document.getElementById('basic').value) || 0;
