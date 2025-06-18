@@ -171,8 +171,13 @@
         let { daysAdjustment, remainingHours } = calculateDaysAndHours(totalHours);
         const carryForEmp = carryForwardData.find(e => e.empName === emp.name);
         if (carryForEmp) {
-          if (!isNaN(carryForEmp.carryForward.days)) daysAdjustment += carryForEmp.carryForward.days;
-          if (!isNaN(carryForEmp.carryForward.hours)) remainingHours += carryForEmp.carryForward.hours;
+          // Apply carry forward only once, avoiding duplication
+          if (!isNaN(carryForEmp.carryForward.days)) daysAdjustment = carryForEmp.carryForward.days;
+          if (!isNaN(carryForEmp.carryForward.hours)) remainingHours = carryForEmp.carryForward.hours;
+        } else {
+          // Initialize with calculated values if no carry forward exists
+          if (!isNaN(daysAdjustment)) daysAdjustment = daysAdjustment;
+          if (!isNaN(remainingHours)) remainingHours = remainingHours;
         }
 
         // Adjust remainingHours to 0 if it equals 12 to avoid double counting
@@ -294,7 +299,7 @@
         reportData.push({ empName, month, carryForward });
       });
       localStorage.setItem(`carryForward_${month}`, JSON.stringify(reportData));
-      alert(`Monthly Report for ${month} saved successfully!`);
+      alert(`Monthly Report for ${month} changed successfully!`);
     }
 
     window.onload = () => {
