@@ -100,9 +100,10 @@ function generateReport() {
     const hoursDisplay = remainingHours !== 0 ? `${remainingHours.toFixed(1)}h` : '0h';
     const hourlyRate = dailySalary / 12;
 
-    // Calculate initial salary including days adjustment
+    // Calculate salary based on present days
+    const presentDaysSalary = presentDays * dailySalary;
     const daysAdjustmentAmount = daysAdjustment * dailySalary;
-    const initialSalary = totalSalary - totalLoanEMI - totalAdvance + daysAdjustmentAmount;
+    const initialSalary = presentDaysSalary - totalLoanEMI - totalAdvance + daysAdjustmentAmount;
 
     const tr = document.createElement('tr');
     tr.className = index % 2 === 0 ? 'even-row' : 'odd-row';
