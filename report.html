@@ -94,7 +94,9 @@
 
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-app.js";
-  import { getDatabase, ref, set, get } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-database.js";
+  import {
+    getDatabase, ref, set, get
+  } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-database.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyBpWA8BuNZ8-Yh6eBtyCMsu9GkQO7v0kn4",
@@ -108,7 +110,21 @@
   const app = initializeApp(firebaseConfig);
   const db = getDatabase(app);
 
-  // ✅ 1. SYNC LOCAL TO FIREBASE
+  function showToast(message, type = "success") {
+    const toast = document.createElement("div");
+    toast.className = `custom-toast ${type}`;
+    toast.textContent = message;
+    document.body.appendChild(toast);
+
+    setTimeout(() => {
+      toast.classList.add("show");
+      setTimeout(() => {
+        toast.classList.remove("show");
+        setTimeout(() => document.body.removeChild(toast), 300);
+      }, 3000);
+    }, 100);
+  }
+
   async function syncLocalToFirebase() {
     const allKeys = Object.keys(localStorage);
     for (const key of allKeys) {
@@ -120,10 +136,9 @@
         await set(ref(db, `sync/${key}`), localStorage.getItem(key));
       }
     }
-    alert("Synced localStorage to Firebase");
+    showToast("✔️ Local data synced to cloud!");
   }
 
-  // ✅ 2. SYNC FIREBASE TO LOCAL
   async function syncFirebaseToLocal() {
     const snap = await get(ref(db, 'sync'));
     if (snap.exists()) {
@@ -131,14 +146,14 @@
       Object.keys(data).forEach(key => {
         localStorage.setItem(key, JSON.stringify(data[key]));
       });
-      alert("Loaded data from Firebase to localStorage");
-      location.reload(); // Optional: Refresh to use the new data
+      showToast("✔️ Cloud data loaded to local!");
+      // Optional:
+      // location.reload();
     } else {
-      alert("No synced data found in Firebase");
+      showToast("⚠️ No cloud data found", "error");
     }
   }
 
-  // ✅ Make available to buttons
   window.syncLocalToFirebase = syncLocalToFirebase;
   window.syncFirebaseToLocal = syncFirebaseToLocal;
 </script>

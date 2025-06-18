@@ -513,3 +513,49 @@ tr:hover {
     .toast.show {
       opacity: 1;
     }
+    .custom-toast {
+  position: fixed;
+  bottom: 30px;
+  right: 30px;
+  background: #28a745;
+  color: white;
+  padding: 12px 20px;
+  border-radius: 8px;
+  font-weight: bold;
+  opacity: 0;
+  transform: translateY(20px);
+  transition: all 0.4s ease;
+  z-index: 9999;
+}
+.custom-toast {
+  position: fixed;
+  bottom: 30px;
+  right: 30px;
+  background: #28a745;
+  color: white;
+  padding: 12px 20px;
+  border-radius: 8px;
+  font-weight: bold;
+  opacity: 0;
+  transform: translateY(20px);
+  transition: all 0.4s ease;
+  z-index: 9999;
+}
+
+.custom-toast.error {
+  background: #dc3545;
+}
+
+.custom-toast.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+  
+.custom-toast.error {
+  background: #dc3545;
+}
+
+.custom-toast.show {
+  opacity: 1;
+  transform: translateY(0);
+}
