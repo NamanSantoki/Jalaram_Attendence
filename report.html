@@ -95,6 +95,12 @@
   </div>
 
   <script>
+    function calculateDaysAndHours(totalHours) {
+      const fullDays = Math.floor(totalHours / 12);
+      const remainingHours = totalHours % 12;
+      return { daysAdjustment: fullDays, remainingHours: remainingHours };
+    }
+
     function generateReport() {
       const month = document.getElementById('reportMonth').value;
       if (!month) return alert('Please select a month.');
@@ -171,6 +177,12 @@
           if (!isNaN(carryForEmp.carryForward.hours)) remainingHours += carryForEmp.carryForward.hours;
         }
 
+        // Adjust remainingHours to 0 if it equals 12 to avoid double counting
+        if (remainingHours === 12) {
+          daysAdjustment += 1;
+          remainingHours = 0;
+        }
+
         const daysDisplay = daysAdjustment !== 0 ? `${daysAdjustment}d` : '';
         const hoursDisplay = remainingHours !== 0 ? `${remainingHours.toFixed(1)}h` : '';
         const hourlyRate = dailySalary / 12;
@@ -203,7 +215,7 @@
         tr.dataset.hourlyRate = hourlyRate;
         tr.dataset.daysAdjustment = daysAdjustment;
         tr.dataset.remainingHours = remainingHours;
-        tr.dataset.currentAdjustment = 0; // Reset current adjustment
+        tr.dataset.currentAdjustment = 0;
       });
 
       localStorage.setItem('loans', JSON.stringify(loans));
@@ -220,7 +232,6 @@
       const daysAdjustment = parseFloat(tr.dataset.daysAdjustment);
       const remainingHours = parseFloat(tr.dataset.remainingHours);
 
-      // Recalculate adjustment based on current checkbox states
       let newAdjustment = 0;
       const daysChecked = tr.querySelector('input[data-type="days"]').checked;
       const hoursChecked = tr.querySelector('input[data-type="hours"]').checked;
@@ -232,15 +243,12 @@
         newAdjustment += remainingHours * hourlyRate;
       }
 
-      // Update net salary with the new adjustment
       const netSalary = (initialSalary + newAdjustment).toFixed(2);
       const netSalaryCell = tr.querySelector('.net-salary');
       netSalaryCell.textContent = `₹${netSalary}`;
 
-      // Update current adjustment (reset to new value)
       tr.dataset.currentAdjustment = newAdjustment;
 
-      // Show toast notification
       const toast = document.createElement('div');
       toast.className = 'toast';
       toast.textContent = `New Net Salary for ${empName}: ₹${netSalary}`;
@@ -253,7 +261,6 @@
         }, 2000);
       }, 10);
 
-      // Update other rows for the same employee
       const allRows = document.querySelectorAll(`tr[data-emp="${empName}"]`);
       allRows.forEach(row => {
         if (row !== tr) {
