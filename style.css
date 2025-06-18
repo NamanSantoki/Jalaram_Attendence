@@ -1,15 +1,15 @@
 /* Global Styles */
 body {
   align-items: center;
-  font-family: Arial, sans-serif;
-  background-color: #f0f4f8;
+  font-family: 'Inter', sans-serif;
+  background-color: #f4f6f9;
   margin: 0;
   padding: 0;
   font-size: 16px;
 }
 
 .container {
-  max-width: 1200px;
+  max-width: 1400px;
   margin: 0 auto;
   padding: 20px;
   width: 100%;
@@ -17,16 +17,25 @@ body {
 }
 
 h1 {
-  font-size: 2.5rem;
-  color: #1a3c6d;
+  font-size: 1.8rem;
+  font-weight: 600;
+  color: #1a202c;
   text-align: center;
   margin-bottom: 20px;
   animation: slideIn 0.5s ease-in-out;
 }
 
 h2 {
-  font-size: 1.8rem;
-  color: #2c5282;
+  font-size: 1.4rem;
+  font-weight: 500;
+  color: #2d3748;
+  margin-bottom: 15px;
+}
+
+h3 {
+  font-size: 1.4rem;
+  font-weight: 500;
+  color: #2d3748;
   margin-bottom: 15px;
 }
 
@@ -37,6 +46,7 @@ h4 {
 
 /* Navigation */
 .navbar {
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   animation: fadeIn 0.5s ease-in-out;
 }
 
@@ -51,12 +61,13 @@ h4 {
 
 /* Card Styling */
 .card {
-  background-color: white;
+  background-color: #ffffff;
   padding: 20px;
-  border-radius: 8px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
   margin-bottom: 20px;
   animation: slideIn 0.5s ease-in-out;
+  border: none;
 }
 
 .login-card {
@@ -68,29 +79,26 @@ h4 {
 .input-group {
   display: flex;
   gap: 10px;
-  margin-bottom: 15px;
+  margin-bottom: 20px;
+  max-width: 600px;
 }
 
-input[type="text"],
-input[type="password"],
-input[type="number"],
-input[type="date"],
-input[type="month"],
-select {
+.input-group .form-control, .input-group .form-select {
+  border-radius: 8px;
+  border: 1px solid #cbd5e0;
+  margin-right: 10px;
   padding: 10px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
   flex: 1;
   font-size: 1rem;
 }
 
 button {
-  padding: 12px 24px;
+  padding: 8px 16px;
   border: none;
-  border-radius: 4px;
+  border-radius: 8px;
   background-color: #2b6cb0;
   color: white;
-  font-size: 1rem;
+  font-size: 0.9rem;
   cursor: pointer;
   transition: background-color 0.3s ease, transform 0.3s ease;
 }
@@ -114,12 +122,16 @@ button:disabled, .btn:disabled {
   transform: none;
 }
 
+.input-group .btn {
+  margin-left: 10px;
+}
+
 /* Error and Lock Messages */
 .error-message, .lock-message {
   color: #c53030;
   text-align: center;
   margin-top: 10px;
-  font-size: 1rem;
+  font-size: 0.9rem;
 }
 
 /* Lists */
@@ -142,6 +154,13 @@ li {
   align-items: center;
   gap: 10px;
   padding: 8px 0;
+  margin-bottom: 15px;
+  font-size: 0.9rem;
+  color: #4a5568;
+}
+
+.checkbox-group input {
+  margin-right: 8px;
 }
 
 .employee-label {
@@ -189,28 +208,118 @@ li {
 }
 
 .attendance-info {
-  margin-bottom: 10px;
-  font-size: 1.1rem;
-  color: #2c5282;
-  font-weight: bold;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #4a5568;
+  margin-bottom: 15px;
 }
 
-/* Toast Styling */
-.toast {
-  position: fixed;
-  bottom: 20px;
-  right: 20px;
-  background-color: #2f855a;
-  color: white;
-  padding: 10px 20px;
+/* Attendance Grid */
+.attendance-grid {
+  overflow-x: auto;
+  margin-top: 20px;
+  border-radius: 8px;
+  background-color: #ffffff;
+}
+
+.attendance-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.attendance-table th, .attendance-table td {
+  border: 1px solid #e2e8f0;
+  padding: 6px;
+  text-align: center;
+  vertical-align: middle;
+  font-size: 0.85rem;
+}
+
+.attendance-table th {
+  background-color: #edf2f7;
+  font-weight: 600;
+  color: #2d3748;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.attendance-table .employee-name {
+  font-weight: 500;
+  color: #1a202c;
+  text-align: left;
+  padding-left: 12px;
+  min-width: 200px;
+  position: sticky;
+  left: 0;
+  background-color: #ffffff;
+  z-index: 5;
+}
+
+.total-hours {
+  font-size: 0.8rem;
+  font-weight: 500;
+  margin-left: 10px;
+}
+
+.total-hours.positive {
+  color: #38a169;
+}
+
+.total-hours.negative {
+  color: #e53e3e;
+}
+
+.attendance-btn {
+  width: 28px;
+  height: 28px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border: none;
   border-radius: 4px;
-  opacity: 0;
-  transition: opacity 0.3s ease;
-  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.1s ease;
 }
 
-.toast.show {
-  opacity: 1;
+.attendance-btn.present {
+  background-color: #38a169;
+  color: #ffffff;
+}
+
+.attendance-btn.absent {
+  background-color: #e53e3e;
+  color: #ffffff;
+}
+
+.attendance-btn:hover {
+  transform: scale(1.1);
+}
+
+/* Hours Section */
+.hours-section {
+  margin-top: 20px;
+}
+
+/* Summary Table */
+.summary-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 20px;
+}
+
+.summary-table th, .summary-table td {
+  border: 1px solid #e2e8f0;
+  padding: 8px;
+  text-align: left;
+  font-size: 0.85rem;
+}
+
+.summary-table th {
+  background-color: #edf2f7;
+  font-weight: 600;
 }
 
 /* Table */
@@ -253,6 +362,44 @@ tr:hover {
 .absent {
   color: #c53030;
   font-weight: bold;
+}
+
+/* Toast Styling */
+.toast {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background-color: #38a169;
+  color: #ffffff;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  z-index: 1000;
+}
+
+.toast.show {
+  opacity: 1;
+}
+
+/* Hidden and Remove Button */
+.hidden {
+  display: none;
+}
+
+.remove-btn {
+  background-color: #e53e3e;
+  color: #ffffff;
+  border: none;
+  border-radius: 4px;
+  padding: 2px 6px;
+  font-size: 0.7rem;
+  cursor: pointer;
+}
+
+.remove-btn:hover {
+  background-color: #c53030;
 }
 
 /* Animations */
@@ -343,3 +490,26 @@ tr:hover {
     font-size: 0.9rem;
   }
 }
+.checkbox-cell {
+      padding: 0;
+    }
+    .checkbox-cell input {
+      margin: 0;
+      vertical-align: middle;
+    }
+    .toast {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background-color: #28a745;
+      color: #ffffff;
+      padding: 10px 20px;
+      border-radius: 5px;
+      font-size: 0.9rem;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+      z-index: 1000;
+    }
+    .toast.show {
+      opacity: 1;
+    }

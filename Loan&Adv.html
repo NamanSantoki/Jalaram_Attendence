@@ -259,6 +259,57 @@
 
         window.onload = populateEmployeeDropdowns;
     </script>
-</body>
+    <script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-app.js";
+  import { getDatabase, ref, set, get } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-database.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyBpWA8BuNZ8-Yh6eBtyCMsu9GkQO7v0kn4",
+    authDomain: "jalaram-7bbac.firebaseapp.com",
+    projectId: "jalaram-7bbac",
+    storageBucket: "jalaram-7bbac.firebasestorage.app",
+    messagingSenderId: "865915981684",
+    appId: "1:865915981684:web:2d7156ee1ee725773f6621"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
+
+  // ✅ 1. SYNC LOCAL TO FIREBASE
+  async function syncLocalToFirebase() {
+    const allKeys = Object.keys(localStorage);
+    for (const key of allKeys) {
+      try {
+        const value = localStorage.getItem(key);
+        const parsed = JSON.parse(value);
+        await set(ref(db, `sync/${key}`), parsed);
+      } catch {
+        await set(ref(db, `sync/${key}`), localStorage.getItem(key));
+      }
+    }
+    alert("Synced localStorage to Firebase");
+  }
+
+  // ✅ 2. SYNC FIREBASE TO LOCAL
+  async function syncFirebaseToLocal() {
+    const snap = await get(ref(db, 'sync'));
+    if (snap.exists()) {
+      const data = snap.val();
+      Object.keys(data).forEach(key => {
+        localStorage.setItem(key, JSON.stringify(data[key]));
+      });
+      alert("Loaded data from Firebase to localStorage");
+      location.reload(); // Optional: Refresh to use the new data
+    } else {
+      alert("No synced data found in Firebase");
+    }
+  }
+
+  // ✅ Make available to buttons
+  window.syncLocalToFirebase = syncLocalToFirebase;
+  window.syncFirebaseToLocal = syncFirebaseToLocal;
+</script>
+
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'951a874b49f9a6ef',t:'MTc1MDI0NzAwMS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 
 </html>

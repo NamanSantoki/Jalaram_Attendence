@@ -92,221 +92,56 @@
     </div>
   </div>
 
-  <script>
-    function calculateDaysAndHours(totalHours) {
-      const fullDays = Math.floor(totalHours / 12);
-      const remainingHours = totalHours % 12;
-      return { daysAdjustment: fullDays, remainingHours: remainingHours };
-    }
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-app.js";
+  import { getDatabase, ref, set, get } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-database.js";
 
-    function generateReport() {
-      const month = document.getElementById('reportMonth').value;
-      if (!month) return alert('Please select a month.');
+  const firebaseConfig = {
+    apiKey: "AIzaSyBpWA8BuNZ8-Yh6eBtyCMsu9GkQO7v0kn4",
+    authDomain: "jalaram-7bbac.firebaseapp.com",
+    projectId: "jalaram-7bbac",
+    storageBucket: "jalaram-7bbac.firebasestorage.app",
+    messagingSenderId: "865915981684",
+    appId: "1:865915981684:web:2d7156ee1ee725773f6621"
+  };
 
-      const employees = JSON.parse(localStorage.getItem('employees')) || [];
-      const attendance = JSON.parse(localStorage.getItem('attendance')) || {};
-      const shifts = JSON.parse(localStorage.getItem('shifts')) || {};
-      const advances = JSON.parse(localStorage.getItem('advances')) || {};
-      const loans = JSON.parse(localStorage.getItem('loans')) || {};
-      const extraHours = JSON.parse(localStorage.getItem('extraHours')) || {};
-      const lateHours = JSON.parse(localStorage.getItem('lateHours')) || {};
-      const carryForwardData = JSON.parse(localStorage.getItem(`carryForward_${month}`)) || [];
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
 
-      const tbody = document.getElementById('reportTable').querySelector('tbody');
-      tbody.innerHTML = '';
-
-      const [year, monthNum] = month.split('-');
-      const daysInMonth = new Date(year, monthNum, 0).getDate();
-      let totalPresent = 0, totalAbsent = 0;
-
-      employees.forEach((emp, index) => {
-        if (!emp || !emp.name) return;
-
-        let presentDays = 0, absentDays = 0, morningShifts = 0, nightShifts = 0;
-        for (let day = 1; day <= daysInMonth; day++) {
-          const date = `${year}-${monthNum.padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-          const isPresent = attendance[date]?.[emp.name] || false;
-          const shift = shifts[date]?.[emp.name] || 'morning';
-          if (isPresent) {
-            presentDays++;
-            totalPresent++;
-            if (shift === 'morning') morningShifts++;
-            else nightShifts++;
-          } else {
-            absentDays++;
-            totalAbsent++;
-          }
-        }
-
-        const payableBasic = emp.basic || 0;
-        const payableHra = emp.hra || 0;
-        const payableConveyance = emp.conveyance || 0;
-        const payableOthers = emp.others || 0;
-        const totalSalary = emp.totalSalary || (payableBasic + payableHra + payableConveyance + payableOthers);
-        const dailySalary = totalSalary / daysInMonth;
-
-        const loanList = loans[emp.name] || [];
-        let totalLoan = 0, totalRepaid = 0, totalRemaining = 0, totalLoanEMI = 0;
-        loanList.forEach(l => {
-          if (l.amount) totalLoan += l.amount;
-          if (l.amount && l.remaining !== undefined) totalRepaid += (l.amount - l.remaining);
-          if (l.remaining) totalRemaining += l.remaining;
-          if (l.emi && l.remaining > 0) {
-            totalLoanEMI += l.emi;
-            l.remaining = Math.max(0, l.remaining - l.emi);
-          }
-        });
-
-        const advanceList = advances[emp.name] || [];
-        const totalAdvance = advanceList.reduce((sum, adv) => sum + (adv.amount || 0), 0);
-
-        let totalExtraHours = 0, totalLateHours = 0;
-        for (let day = 1; day <= daysInMonth; day++) {
-          const date = `${year}-${monthNum.padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-          totalExtraHours += extraHours[date]?.[emp.name] || 0;
-          totalLateHours += lateHours[date]?.[emp.name] || 0;
-        }
-        let totalHours = totalExtraHours - totalLateHours;
-
-        let { daysAdjustment, remainingHours } = calculateDaysAndHours(totalHours);
-        const carryForEmp = carryForwardData.find(e => e.empName === emp.name);
-        if (carryForEmp) {
-          // Apply carry forward only once, avoiding duplication
-          if (!isNaN(carryForEmp.carryForward.days)) daysAdjustment = carryForEmp.carryForward.days;
-          if (!isNaN(carryForEmp.carryForward.hours)) remainingHours = carryForEmp.carryForward.hours;
-        } else {
-          // Initialize with calculated values if no carry forward exists
-          if (!isNaN(daysAdjustment)) daysAdjustment = daysAdjustment;
-          if (!isNaN(remainingHours)) remainingHours = remainingHours;
-        }
-
-        // Adjust remainingHours to 0 if it equals 12 to avoid double counting
-        if (remainingHours === 12) {
-          daysAdjustment += 1;
-          remainingHours = 0;
-        }
-
-        const daysDisplay = daysAdjustment !== 0 ? `${daysAdjustment}d` : '';
-        const hoursDisplay = remainingHours !== 0 ? `${remainingHours.toFixed(1)}h` : '';
-        const hourlyRate = dailySalary / 12;
-
-        const tr = document.createElement('tr');
-        tr.className = index % 2 === 0 ? 'even-row' : 'odd-row';
-        tr.innerHTML = `
-          <td>${emp.name}</td>
-          <td>₹${payableBasic}</td>
-          <td>₹${payableHra}</td>
-          <td>₹${payableConveyance}</td>
-          <td>₹${payableOthers}</td>
-          <td>₹${totalSalary}</td>
-          <td>${presentDays}</td>
-          <td>${absentDays}</td>
-          <td>₹${totalAdvance}</td>
-          <td>₹${totalLoan.toFixed(2)}</td>
-          <td>₹${totalRepaid.toFixed(2)}</td>
-          <td>₹${totalRemaining.toFixed(2)}</td>
-          <td>₹${totalLoanEMI}</td>
-          <td class="checkbox-cell"><input type="checkbox" data-emp="${emp.name}" data-type="days" onchange="updateNetSalary(this)"> ${daysDisplay}</td>
-          <td class="checkbox-cell"><input type="checkbox" data-emp="${emp.name}" data-type="hours" onchange="updateNetSalary(this)"> ${hoursDisplay}</td>
-          <td class="net-salary" data-emp="${emp.name}">₹${(totalSalary - totalLoanEMI - totalAdvance).toFixed(2)}</td>`;
-        tbody.appendChild(tr);
-
-        tr.dataset.initialSalary = (totalSalary - totalLoanEMI - totalAdvance).toFixed(2);
-        tr.dataset.dailySalary = dailySalary;
-        tr.dataset.hourlyRate = hourlyRate;
-        tr.dataset.daysAdjustment = daysAdjustment;
-        tr.dataset.remainingHours = remainingHours;
-        tr.dataset.currentAdjustment = 0;
-      });
-
-      localStorage.setItem('loans', JSON.stringify(loans));
-      document.getElementById('monthInfo').textContent = `Total Present: ${totalPresent}, Total Absent: ${totalAbsent}`;
-    }
-
-    function updateNetSalary(checkbox) {
-      const tr = checkbox.closest('tr');
-      const empName = checkbox.getAttribute('data-emp');
-      const type = checkbox.getAttribute('data-type');
-      const initialSalary = parseFloat(tr.dataset.initialSalary);
-      const dailySalary = parseFloat(tr.dataset.dailySalary);
-      const hourlyRate = parseFloat(tr.dataset.hourlyRate);
-      const daysAdjustment = parseFloat(tr.dataset.daysAdjustment);
-      const remainingHours = parseFloat(tr.dataset.remainingHours);
-
-      let newAdjustment = 0;
-      const daysChecked = tr.querySelector('input[data-type="days"]').checked;
-      const hoursChecked = tr.querySelector('input[data-type="hours"]').checked;
-
-      if (daysChecked && daysAdjustment !== 0) {
-        newAdjustment += daysAdjustment * dailySalary;
+  // ✅ 1. SYNC LOCAL TO FIREBASE
+  async function syncLocalToFirebase() {
+    const allKeys = Object.keys(localStorage);
+    for (const key of allKeys) {
+      try {
+        const value = localStorage.getItem(key);
+        const parsed = JSON.parse(value);
+        await set(ref(db, `sync/${key}`), parsed);
+      } catch {
+        await set(ref(db, `sync/${key}`), localStorage.getItem(key));
       }
-      if (hoursChecked && remainingHours !== 0) {
-        newAdjustment += remainingHours * hourlyRate;
-      }
+    }
+    alert("Synced localStorage to Firebase");
+  }
 
-      const netSalary = (initialSalary + newAdjustment).toFixed(2);
-      const netSalaryCell = tr.querySelector('.net-salary');
-      netSalaryCell.textContent = `₹${netSalary}`;
-
-      tr.dataset.currentAdjustment = newAdjustment;
-
-      const toast = document.createElement('div');
-      toast.className = 'toast';
-      toast.textContent = `New Net Salary for ${empName}: ₹${netSalary}`;
-      document.body.appendChild(toast);
-      setTimeout(() => {
-        toast.classList.add('show');
-        setTimeout(() => {
-          toast.classList.remove('show');
-          setTimeout(() => document.body.removeChild(toast), 300);
-        }, 2000);
-      }, 10);
-
-      const allRows = document.querySelectorAll(`tr[data-emp="${empName}"]`);
-      allRows.forEach(row => {
-        if (row !== tr) {
-          const rowNetSalaryCell = row.querySelector('.net-salary');
-          rowNetSalaryCell.textContent = `₹${netSalary}`;
-          row.dataset.currentAdjustment = newAdjustment;
-        }
+  // ✅ 2. SYNC FIREBASE TO LOCAL
+  async function syncFirebaseToLocal() {
+    const snap = await get(ref(db, 'sync'));
+    if (snap.exists()) {
+      const data = snap.val();
+      Object.keys(data).forEach(key => {
+        localStorage.setItem(key, JSON.stringify(data[key]));
       });
+      alert("Loaded data from Firebase to localStorage");
+      location.reload(); // Optional: Refresh to use the new data
+    } else {
+      alert("No synced data found in Firebase");
     }
+  }
 
-    function downloadExcel() {
-      const table = document.getElementById("reportTable");
-      if (!table || table.rows.length <= 1) return alert("Please generate the report first.");
-      const wb = XLSX.utils.book_new();
-      const ws = XLSX.utils.table_to_sheet(table);
-      XLSX.utils.book_append_sheet(wb, ws, "Monthly Report");
-      const month = document.getElementById("reportMonth").value;
-      const filename = month ? `Monthly_Report_${month}.xlsx` : `Monthly_Report.xlsx`;
-      XLSX.writeFile(wb, filename);
-    }
+  // ✅ Make available to buttons
+  window.syncLocalToFirebase = syncLocalToFirebase;
+  window.syncFirebaseToLocal = syncFirebaseToLocal;
+</script>
 
-    function saveMonthlyReport() {
-      const month = document.getElementById('reportMonth').value;
-      if (!month) return alert('Please select a month before saving.');
-      const reportData = [];
-      const rows = document.querySelectorAll('#reportTable tbody tr');
-      rows.forEach(row => {
-        const empName = row.cells[0].textContent;
-        const dayCheckbox = row.querySelector('input[data-type="days"]');
-        const hourCheckbox = row.querySelector('input[data-type="hours"]');
-        const carryForward = {
-          days: !dayCheckbox.checked ? parseFloat(row.dataset.daysAdjustment || 0) : 0,
-          hours: !hourCheckbox.checked ? parseFloat(row.dataset.remainingHours || 0) : 0
-        };
-        reportData.push({ empName, month, carryForward });
-      });
-      localStorage.setItem(`carryForward_${month}`, JSON.stringify(reportData));
-      alert(`Monthly Report for ${month} changed successfully!`);
-    }
-
-    window.onload = () => {
-      const today = new Date();
-      document.getElementById('reportMonth').value = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
-      generateReport();
-    };
-  </script>
-</body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'951a88868b57a6ef',t:'MTc1MDI0NzA1MS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>

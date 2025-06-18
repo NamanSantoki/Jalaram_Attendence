@@ -1,0 +1,181 @@
+
+    body {
+      background-color: #f4f6f9;
+      font-family: 'Inter', sans-serif;
+    }
+    .navbar {
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+    .container {
+      max-width: 1400px;
+      padding: 20px;
+    }
+    .card {
+      border: none;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+      padding: 20px;
+      background-color: #ffffff;
+      margin-bottom: 20px;
+    }
+    h1 {
+      font-size: 1.8rem;
+      font-weight: 600;
+      color: #1a202c;
+      margin-bottom: 20px;
+    }
+    h2, h3 {
+      font-size: 1.4rem;
+      font-weight: 500;
+      color: #2d3748;
+      margin-bottom: 15px;
+    }
+    .attendance-grid {
+      overflow-x: auto;
+      margin-top: 20px;
+      border-radius: 8px;
+      background-color: #ffffff;
+    }
+    .attendance-table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+    }
+    .attendance-table th, .attendance-table td {
+      border: 1px solid #e2e8f0;
+      padding: 6px;
+      text-align: center;
+      vertical-align: middle;
+      font-size: 0.85rem;
+    }
+    .attendance-table th {
+      background-color: #edf2f7;
+      font-weight: 600;
+      color: #2d3748;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+    .attendance-table .employee-name {
+      font-weight: 500;
+      color: #1a202c;
+      text-align: left;
+      padding-left: 12px;
+      min-width: 200px;
+      position: sticky;
+      left: 0;
+      background-color: #ffffff;
+      z-index: 5;
+    }
+    .total-hours {
+      font-size: 0.8rem;
+      font-weight: 500;
+      margin-left: 10px;
+    }
+    .total-hours.positive {
+      color: #38a169;
+    }
+    .total-hours.negative {
+      color: #e53e3e;
+    }
+    .attendance-btn {
+      width: 28px;
+      height: 28px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      border: none;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform 0.1s ease;
+    }
+    .attendance-btn.present {
+      background-color: #38a169;
+      color: #ffffff;
+    }
+    .attendance-btn.absent {
+      background-color: #e53e3e;
+      color: #ffffff;
+    }
+    .attendance-btn:hover {
+      transform: scale(1.1);
+    }
+    .input-group {
+      margin-bottom: 20px;
+      max-width: 600px;
+    }
+    .input-group .form-control, .input-group .form-select {
+      border-radius: 8px;
+      border: 1px solid #cbd5e0;
+      margin-right: 10px;
+    }
+    .input-group .btn {
+      border-radius: 8px;
+      font-size: 0.9rem;
+      padding: 8px 16px;
+      margin-left: 10px;
+    }
+    .attendance-info {
+      font-size: 0.9rem;
+      font-weight: 500;
+      color: #4a5568;
+      margin-bottom: 15px;
+    }
+    .checkbox-group {
+      margin-bottom: 15px;
+      font-size: 0.9rem;
+      color: #4a5568;
+    }
+    .checkbox-group input {
+      margin-right: 8px;
+    }
+    .hours-section {
+      margin-top: 20px;
+    }
+    .summary-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+    .summary-table th, .summary-table td {
+      border: 1px solid #e2e8f0;
+      padding: 8px;
+      text-align: left;
+      font-size: 0.85rem;
+    }
+    .summary-table th {
+      background-color: #edf2f7;
+      font-weight: 600;
+    }
+    .toast {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background-color: #38a169;
+      color: #ffffff;
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+      z-index: 1000;
+    }
+    .toast.show {
+      opacity: 1;
+    }
+    .hidden {
+      display: none;
+    }
+    .remove-btn {
+      background-color: #e53e3e;
+      color: #ffffff;
+      border: none;
+      border-radius: 4px;
+      padding: 2px 6px;
+      font-size: 0.7rem;
+      cursor: pointer;
+    }
+    .remove-btn:hover {
+      background-color: #c53030;
+    }
