@@ -559,3 +559,28 @@ tr:hover {
   opacity: 1;
   transform: translateY(0);
 }
+/* style.css or main.css */
+
+.custom-toast {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background-color: #4CAF50; /* Green for success */
+  color: white;
+  padding: 10px 20px;
+  border-radius: 5px;
+  z-index: 1000;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.custom-toast.show {
+  opacity: 1;
+  visibility: visible;
+}
+
+.custom-toast.error {
+  background-color: #f44336; /* Red for error messages */
+}

@@ -1,3 +1,33 @@
+// util.js
+
+// Firebase Imports (ensure these are present if not already)
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-app.js";
+import { getDatabase, ref, set, get, remove } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-database.js";
+
+// Your Firebase Configuration (copy from Firebase Console)
+const firebaseConfig = {
+  apiKey: "AIzaSyBpWA8BuNZ8-Yh6eBtyCMsu9GkQO7v0kn4", // YOUR API KEY
+  authDomain: "jalaram-7bbac.firebaseapp.com",
+  projectId: "jalaram-7bbac",
+  storageBucket: "jalaram-7bbac.firebasestorage.app",
+  messagingSenderId: "865915981684",
+  appId: "1:865915981684:web:2d7156ee1ee725773f6621"
+};
+
+// Initialize Firebase App and Database globally for your project
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
+// Make db globally accessible if your files are not using modules properly
+// window.db = db; // Consider if necessary based on your import/export strategy
+
+// --- Existing util.js functions continue below ---
+function formatHoursDisplay(totalHours) {
+  // ... rest of your util.js ...
+}
+
+
+
 function formatHoursDisplay(totalHours) {
   const days = Math.floor(Math.abs(totalHours) / 12);
   const remainingHours = totalHours - (days * 12 * Math.sign(totalHours));
@@ -369,4 +399,3 @@ window.onload = () => {
   document.getElementById('reportMonth').value = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
   generateReport();
 };
-
