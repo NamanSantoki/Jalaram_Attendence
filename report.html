@@ -1,22 +1,25 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Monthly Report</title>
-  <link href="style.css" rel="stylesheet" />
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script src="util.js"></script>
+  <link rel="stylesheet" href="style.css">
   <style>
     .checkbox-cell {
       padding: 0;
     }
+
     .checkbox-cell input {
       margin: 0;
       vertical-align: middle;
     }
+
     .toast {
       position: fixed;
       bottom: 20px;
@@ -30,37 +33,108 @@
       transition: opacity 0.3s ease;
       z-index: 1000;
     }
+
     .toast.show {
       opacity: 1;
     }
+
+    .salary-slip {
+      display: none;
+      margin-top: 20px;
+      padding: 20px;
+      border: 1px solid #ccc;
+      background-color: #f9f9f9;
+      font-family: Arial, sans-serif;
+    }
+
+    .salary-slip h2 {
+      text-align: center;
+      color: #333;
+    }
+
+    .salary-slip p {
+      margin: 5px 0;
+    }
+
+    .salary-slip table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+
+    .salary-slip td,
+    .salary-slip th {
+      border: 1px solid #ddd;
+      padding: 8px;
+      text-align: left;
+    }
+
+    .salary-slip th {
+      background-color: #f2f2f2;
+    }
+
+    @media print {
+      body * {
+        visibility: hidden;
+      }
+
+      .salary-slip,
+      .salary-slip * {
+        visibility: visible;
+      }
+
+      .salary-slip {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+      }
+
+      .no-print {
+        display: none;
+      }
+    }
   </style>
 </head>
+
 <body>
   <nav class="navbar navbar-expand-lg navbar-light bg-light">
     <div class="container-fluid">
       <a class="navbar-brand" href="#">Jalaram Tools</a>
-      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+        aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
         <span class="navbar-toggler-icon"></span>
       </button>
       <div class="collapse navbar-collapse" id="navbarNav">
         <ul class="navbar-nav ms-auto">
-          <li class="nav-item"><a class="nav-link" href="main.html">Attendance</a></li>
-          <li class="nav-item"><a class="nav-link" href="employees.html">Employees</a></li>
-          <li class="nav-item"><a class="nav-link active" href="report.html">Monthly Report</a></li>
-          <li class="nav-item"><a class="nav-link active" href="Loan&Adv.html">loan</a></li>
-          <li class="nav-item"><a class="nav-link" href="settings.html">Settings</a></li>
-          <li class="nav-item"><a class="nav-link text-danger" href="index.html">Logout</a></li>
+          <li class="nav-item">
+            <a class="nav-link" href="main.html">Attendance</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="employees.html">Employees</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="report.html">Monthly Report</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="Loan&Adv.html">Loan</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="settings.html">Settings</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link text-danger" href="index.html">Logout</a>
+          </li>
         </ul>
       </div>
     </div>
   </nav>
-
   <div class="container">
     <h1>Monthly Report</h1>
     <div class="card p-3">
       <h2>Select Month</h2>
       <div class="input-group mb-3">
-        <input type="month" id="reportMonth" class="form-control" />
+        <input type="month" id="reportMonth" class="form-control">
         <button onclick="generateReport()" class="btn btn-primary">Generate</button>
         <button onclick="downloadExcel()" class="btn btn-success">Download Excel</button>
         <button onclick="saveMonthlyReport()" class="btn btn-secondary">Save Report</button>
@@ -76,7 +150,7 @@
             <th>Others (₹)</th>
             <th>Total Salary (₹)</th>
             <th>Present</th>
-            <th>Absent</th>      
+            <th>Absent</th>
             <th>Advance (₹)</th>
             <th>Total Loan (₹)</th>
             <th>Loan Repaid (₹)</th>
@@ -85,78 +159,13 @@
             <th>Days</th>
             <th>Hours</th>
             <th>Net Salary (₹)</th>
+            <th>Action</th>
           </tr>
         </thead>
         <tbody></tbody>
       </table>
     </div>
+    <div id="salarySlipContainer" class="salary-slip no-print"></div>
   </div>
-
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-app.js";
-  import {
-    getDatabase, ref, set, get
-  } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-database.js";
-
-  const firebaseConfig = {
-    apiKey: "AIzaSyBpWA8BuNZ8-Yh6eBtyCMsu9GkQO7v0kn4",
-    authDomain: "jalaram-7bbac.firebaseapp.com",
-    projectId: "jalaram-7bbac",
-    storageBucket: "jalaram-7bbac.firebasestorage.app",
-    messagingSenderId: "865915981684",
-    appId: "1:865915981684:web:2d7156ee1ee725773f6621"
-  };
-
-  const app = initializeApp(firebaseConfig);
-  const db = getDatabase(app);
-
-  function showToast(message, type = "success") {
-    const toast = document.createElement("div");
-    toast.className = `custom-toast ${type}`;
-    toast.textContent = message;
-    document.body.appendChild(toast);
-
-    setTimeout(() => {
-      toast.classList.add("show");
-      setTimeout(() => {
-        toast.classList.remove("show");
-        setTimeout(() => document.body.removeChild(toast), 300);
-      }, 3000);
-    }, 100);
-  }
-
-  async function syncLocalToFirebase() {
-    const allKeys = Object.keys(localStorage);
-    for (const key of allKeys) {
-      try {
-        const value = localStorage.getItem(key);
-        const parsed = JSON.parse(value);
-        await set(ref(db, `sync/${key}`), parsed);
-      } catch {
-        await set(ref(db, `sync/${key}`), localStorage.getItem(key));
-      }
-    }
-    showToast("✔️ Local data synced to cloud!");
-  }
-
-  async function syncFirebaseToLocal() {
-    const snap = await get(ref(db, 'sync'));
-    if (snap.exists()) {
-      const data = snap.val();
-      Object.keys(data).forEach(key => {
-        localStorage.setItem(key, JSON.stringify(data[key]));
-      });
-      showToast("✔️ Cloud data loaded to local!");
-      // Optional:
-      // location.reload();
-    } else {
-      showToast("⚠️ No cloud data found", "error");
-    }
-  }
-
-  window.syncLocalToFirebase = syncLocalToFirebase;
-  window.syncFirebaseToLocal = syncFirebaseToLocal;
-</script>
-
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'951a88868b57a6ef',t:'MTc1MDI0NzA1MS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</body>
 </html>

@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <script src="util.js"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Salary Slip</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      background-color: #f9f9f9;
+    }
+    h2 {
+      text-align: center;
+      color: #2c3e50;
+      font-size: 2em;
+      margin-bottom: 20px;
+      text-transform: uppercase;
+    }
+    p {
+      margin: 5px 0;
+      color: #34495e;
+      font-size: 1.1em;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+      background-color: #ffffff;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    }
+    td, th {
+      border: 1px solid #ddd;
+      padding: 12px;
+      text-align: left;
+      font-size: 1em;
+    }
+    th {
+      background-color: #3498db;
+      color: #ffffff;
+      font-weight: bold;
+    }
+    tr:nth-child(even) {
+      background-color: #f2f2f2;
+    }
+    tr:hover {
+      background-color: #e0f7fa;
+    }
+    .print-button {
+      text-align: center;
+      margin-top: 30px;
+    }
+    .print-button button {
+      background-color: #e74c3c;
+      color: #ffffff;
+      border: none;
+      padding: 12px 25px;
+      font-size: 1.1em;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+    .print-button button:hover {
+      background-color: #c0392b;
+    }
+    .print-button button:active {
+      background-color: #a93226;
+    }
+    @media print {
+      body {
+        margin: 0;
+        padding: 0;
+      }
+      .print-button {
+        display: none;
+      }
+      table {
+        box-shadow: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <script>
+    // Get data from URL parameters
+    const urlParams = new URLSearchParams(window.location.search);
+    const slipData = urlParams.get('data');
+    const empName = urlParams.get('empName');
+    const formattedMonth = urlParams.get('formattedMonth');
+
+    // Display the slip data with updated title
+    document.body.innerHTML = decodeURIComponent(slipData);
+    document.title = `Salary Slip - ${decodeURIComponent(empName)} ${decodeURIComponent(formattedMonth)}`;
+
+    // Add print button
+    const printButton = document.createElement('div');
+    printButton.className = 'print-button';
+    printButton.innerHTML = '<button onclick="window.print()">Print Salary Slip</button>';
+    document.body.appendChild(printButton);
+  </script>
+</body>
+</html>

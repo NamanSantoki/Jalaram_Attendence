@@ -1,4 +1,4 @@
- function logout() {
+function logout() {
       localStorage.removeItem('isLoggedIn');
       window.location.href = 'index.html';
     }
@@ -29,25 +29,20 @@
 
     function loadAttendanceGrid() {
       const monthInput = document.getElementById('attendanceMonth').value;
-      const dateInput = document.getElementById('attendanceDate').value;
       const saveButton = document.getElementById('saveButton');
       const resetButton = document.getElementById('resetButton');
       const dateHeader = document.getElementById('dateHeader');
       const attendanceBody = document.getElementById('attendanceBody');
       const hoursSummaryBody = document.getElementById('hoursSummaryBody');
-      const showPresentOnly = document.getElementById('show-present-only').checked;
-      const selectedDate = document.getElementById('selectedDate');
       const employeeSelect = document.getElementById('employeeSelect');
 
-      if (!monthInput || !dateInput) {
+      if (!monthInput) {
         saveButton.disabled = true;
         resetButton.disabled = true;
         dateHeader.innerHTML = '';
         attendanceBody.innerHTML = '';
         hoursSummaryBody.innerHTML = '';
-        selectedDate.textContent = '';
         employeeSelect.innerHTML = '<option value="">Select Employee</option>';
-        document.getElementById('attendance-info').textContent = '';
         return;
       }
 
@@ -58,19 +53,8 @@
         return `${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
       });
 
-      // Validate date against selected month
-      const selectedDateObj = new Date(dateInput);
-      if (selectedDateObj.getFullYear() !== year || selectedDateObj.getMonth() + 1 !== month) {
-        alert('Selected date must be within the selected month.');
-        document.getElementById('attendanceDate').value = '';
-        return;
-      }
-
       // Set table header
       dateHeader.innerHTML = '<th>Employee</th>' + dates.map(date => `<th>${date.split('-')[2]}</th>`).join('');
-
-      // Update selected date display
-      selectedDate.textContent = formatDate(dateInput);
 
       // Populate employee dropdown
       employeeSelect.innerHTML = '<option value="">Select Employee</option>' +
@@ -81,26 +65,17 @@
 
       if (employees.length === 0) {
         attendanceBody.innerHTML = '<tr><td colspan="' + (daysInMonth + 1) + '" class="no-data">No employees found. Add employees first.</td></tr>';
-        document.getElementById('attendance-info').textContent = '';
         return;
       }
 
-      let totalPresent = 0;
       employees.forEach(emp => {
         if (!emp || !emp.name) return;
 
-        let presentCount = 0;
         const row = document.createElement('tr');
-        const totalHours = (extraHours[dateInput]?.[emp.name] || 0) - (lateHours[dateInput]?.[emp.name] || 0);
-        const hoursDisplay = formatHoursDisplay(totalHours);
-        const hoursClass = totalHours >= 0 ? 'positive' : 'negative';
-        row.innerHTML = `<td class="employee-name">${emp.name} <span class="total-hours ${hoursClass}">${hoursDisplay}</span></td>`;
+        row.innerHTML = `<td class="employee-name">${emp.name}</td>`;
 
         dates.forEach(date => {
           const isPresent = attendance[date]?.[emp.name] !== undefined ? attendance[date][emp.name] : true;
-          if (isPresent) presentCount++;
-
-          if (showPresentOnly && !isPresent) return;
 
           const cell = document.createElement('td');
           const button = document.createElement('button');
@@ -110,43 +85,37 @@
           cell.appendChild(button);
           row.appendChild(cell);
         });
-
-        if (!showPresentOnly || presentCount > 0) {
-          attendanceBody.appendChild(row);
-          totalPresent += presentCount;
-        }
+        
+        attendanceBody.appendChild(row);
       });
 
       // Populate hours summary
-      if (!document.getElementById('hide-summary').checked) {
-        hoursHistory
-          .filter(record => record.date.startsWith(`${year}-${month.toString().padStart(2, '0')}`))
-          .forEach(record => {
-            const row = document.createElement('tr');
-            row.innerHTML = `
-              <td>${record.employee}</td>
-              <td>${formatDate(record.date)}</td>
-              <td>${record.type === 'extra' ? 'Overtime' : 'Undertime'}</td>
-              <td>${record.hours.toFixed(1)}h</td>
-              <td><button class="remove-btn" onclick="removeHour('${record.employee}', '${record.date}', '${record.type}')">Remove</button></td>
-            `;
-            hoursSummaryBody.appendChild(row);
-          });
-      }
-
+      hoursHistory
+        .filter(record => record.date.startsWith(`${year}-${month.toString().padStart(2, '0')}`))
+        .forEach(record => {
+          const row = document.createElement('tr');
+          row.innerHTML = `
+            <td>${record.employee}</td>
+            <td>${formatDate(record.date)}</td>
+            <td>${record.type === 'extra' ? 'Overtime' : 'Undertime'}</td>
+            <td>${record.hours.toFixed(1)}h</td>
+            <td><button class="remove-btn" onclick="removeHour('${record.employee}', '${record.date}', '${record.type}')">Remove</button></td>
+          `;
+          hoursSummaryBody.appendChild(row);
+        });
+      
       saveButton.disabled = false;
       resetButton.disabled = false;
-      document.getElementById('attendance-info').textContent = `Total Present: ${totalPresent} / ${employees.length * daysInMonth}`;
     }
 
     function submitHours() {
       const employee = document.getElementById('employeeSelect').value;
       const extraHoursInput = parseFloat(document.getElementById('extraHoursInput').value) || 0;
       const lateHoursInput = parseFloat(document.getElementById('lateHoursInput').value) || 0;
-      const date = document.getElementById('attendanceDate').value;
+      const date = document.getElementById('hoursDateInput').value;
 
       if (!employee || !date || (extraHoursInput <= 0 && lateHoursInput <= 0)) {
-        showToast('Please select an employee, enter valid hours, and select a date.');
+        showToast('Please select an employee, a date, and enter valid hours.');
         return;
       }
 
@@ -173,7 +142,7 @@
       localStorage.setItem('extraHours', JSON.stringify(extraHours));
       localStorage.setItem('lateHours', JSON.stringify(lateHours));
       localStorage.setItem('hoursHistory', JSON.stringify(hoursHistory));
-      adjustDayCount(employee, date);
+      loadAttendanceGrid(); // Reload grid to show updated summary
       document.getElementById('extraHoursInput').value = '';
       document.getElementById('lateHoursInput').value = '';
       showToast('Hours updated for ' + employee);
@@ -187,27 +156,10 @@
       showToast(`Attendance updated for ${empName} on ${formatDate(date)}`);
     }
 
-    function adjustDayCount(empName, date) {
-      extraHours[date] = extraHours[date] || {};
-      lateHours[date] = lateHours[date] || {};
-      let extra = extraHours[date][empName] || 0;
-      let late = lateHours[date][empName] || 0;
-      const totalHours = extra - late;
-
-      attendance[date] = attendance[date] || {};
-      let currentStatus = attendance[date][empName] !== undefined ? attendance[date][empName] : true;
-
-      localStorage.setItem('attendance', JSON.stringify(attendance));
-      localStorage.setItem('extraHours', JSON.stringify(extraHours));
-      localStorage.setItem('lateHours', JSON.stringify(lateHours));
-      loadAttendanceGrid();
-    }
-
     function saveAttendance() {
       const monthInput = document.getElementById('attendanceMonth').value;
-      const dateInput = document.getElementById('attendanceDate').value;
-      if (!monthInput || !dateInput) {
-        alert('Please select a month and date.');
+      if (!monthInput) {
+        alert('Please select a month.');
         return;
       }
 
@@ -279,15 +231,6 @@
       }, 10);
     }
 
-    function toggleSummary() {
-      const summaryCard = document.getElementById('hoursSummaryCard');
-      const hideSummary = document.getElementById('hide-summary').checked;
-      summaryCard.classList.toggle('hidden', hideSummary);
-      if (!hideSummary) {
-        loadAttendanceGrid(); // Reload to show summary if unhidden
-      }
-    }
-
     function removeHour(employee, date, type) {
       const index = hoursHistory.findIndex(record => 
         record.employee === employee && record.date === date && record.type === type
@@ -316,10 +259,7 @@
       const today = new Date();
       const year = today.getFullYear();
       const month = (today.getMonth() + 1).toString().padStart(2, '0');
-      const day = today.getDate().toString().padStart(2, '0');
       document.getElementById('attendanceMonth').value = `${year}-${month}`;
-      document.getElementById('attendanceDate').value = `${year}-${month}-${day}`;
       document.getElementById('attendanceMonth').addEventListener('change', loadAttendanceGrid);
-      document.getElementById('attendanceDate').addEventListener('change', loadAttendanceGrid);
       loadAttendanceGrid();
     };

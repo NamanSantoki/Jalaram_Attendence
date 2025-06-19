@@ -49,16 +49,8 @@
       <h2>Attendance for Selected Month</h2>
       <div class="input-group">
         <input id="attendanceMonth" type="month" class="form-control">
-        <input id="attendanceDate" type="date" class="form-control">
         <button onclick="saveAttendance()" id="saveButton" class="btn btn-primary">Save</button>
         <button onclick="resetAttendance()" id="resetButton" class="btn btn-danger">Reset</button>
-      </div>
-      <div class="attendance-info" id="attendance-info"></div>
-      <div class="checkbox-group">
-        <input type="checkbox" id="show-present-only" onchange="loadAttendanceGrid()">
-        <label for="show-present-only"></label>
-        <input type="checkbox" id="hide-summary" onchange="toggleSummary()">
-        <label for="hide-summary"></label>
       </div>
       <div class="attendance-grid">
         <table class="attendance-table" id="attendanceTable">
@@ -70,11 +62,12 @@
       </div>
     </div>
     <div class="card hours-section">
-      <h3>Manage Hours for <span id="selectedDate"></span></h3>
+      <h3>Manage Hours</h3>
       <div class="input-group mb-3">
         <select id="employeeSelect" class="form-select">
           <option value="">Select Employee</option>
         </select>
+        <input id="hoursDateInput" type="date" class="form-control">
         <input id="extraHoursInput" type="number" class="form-control" placeholder="Extra Hours" step="0.5" min="0">
         <input id="lateHoursInput" type="number" class="form-control" placeholder="Late Hours" step="0.5" min="0">
         <button onclick="submitHours()" class="btn btn-primary">Submit</button>
@@ -143,40 +136,23 @@
     showToast("✔️ Local data synced to cloud!");
   }
 
-  async function syncLocalToFirebase() {
-  const allKeys = Object.keys(localStorage);
-  for (const key of allKeys) {
-    try {
-      const value = localStorage.getItem(key);
-      const parsed = JSON.parse(value);
-      await set(ref(db, `sync/${key}`), parsed);
-    } catch {
-      await set(ref(db, `sync/${key}`), localStorage.getItem(key));
+  // NOTE: syncFirebaseToLocal function was missing, assuming it's needed for context.
+  async function syncFirebaseToLocal() {
+    const snap = await get(ref(db, 'sync'));
+    if (snap.exists()) {
+      const data = snap.val();
+      Object.keys(data).forEach(key => {
+        localStorage.setItem(key, JSON.stringify(data[key]));
+      });
+      showToast("✔️ Cloud data loaded to local!");
+    } else {
+      showToast("⚠️ No cloud data found", "error");
     }
   }
-  showToast("✔️ Local data synced to cloud!");
-}
-function showToast(message, type = "success") {
-  const toast = document.createElement("div");
-  toast.className = `custom-toast ${type}`;
-  toast.textContent = message;
-  document.body.appendChild(toast);
-
-  setTimeout(() => {
-    toast.classList.add("show");
-    setTimeout(() => {
-      toast.classList.remove("show");
-      setTimeout(() => document.body.removeChild(toast), 300);
-    }, 3000);
-  }, 100);
-}
-
 
   window.syncLocalToFirebase = syncLocalToFirebase;
   window.syncFirebaseToLocal = syncFirebaseToLocal;
 </script>
 
-
-
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'951a87910e57a6ef',t:'MTc1MDI0NzAxMi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</body>
 </html>
