@@ -48,7 +48,7 @@
     <div class="card">
       <h2>Attendance for Selected Month</h2>
       <div class="input-group">
-        <input id="attendanceMonth" type="month" class="form-control">
+        <input style="min-width: 250px;" id="attendanceMonth" type="month" class="form-control">
         <button onclick="saveAttendance()" id="saveButton" class="btn btn-primary">Save</button>
         <button onclick="resetAttendance()" id="resetButton" class="btn btn-danger">Reset</button>
       </div>
@@ -64,12 +64,12 @@
     <div class="card hours-section">
       <h3>Manage Hours</h3>
       <div class="input-group mb-3">
-        <select id="employeeSelect" class="form-select">
+        <select style="min-width: 150px;  max-width: 150px;"id="employeeSelect" class="form-select">
           <option value="">Select Employee</option>
         </select>
-        <input id="hoursDateInput" type="date" class="form-control">
-        <input id="extraHoursInput" type="number" class="form-control" placeholder="Extra Hours" step="0.5" min="0">
-        <input id="lateHoursInput" type="number" class="form-control" placeholder="Late Hours" step="0.5" min="0">
+        <input style="min-width: 150px;  max-width: 150px;" id="hoursDateInput" type="date" class="form-control">
+        <input style="min-width: 150px;  max-width: 150px;"id="extraHoursInput" type="number" class="form-control" placeholder="Extra Hours" step="0.5" min="0">
+        <input style="min-width: 150px; max-width: 150px;"  id="lateHoursInput" type="number" class="form-control" placeholder="Late Hours" step="0.5" min="0">
         <button onclick="submitHours()" class="btn btn-primary">Submit</button>
       </div>
     </div>
