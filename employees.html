@@ -53,6 +53,7 @@
         <input type="number" id="conveyance" placeholder="Conveyance (₹)" class="form-control salary-input">
         <input type="number" id="others" placeholder="Others (₹)" class="form-control salary-input">
         <button onclick="addEmployee()" class="btn btn-primary">Add</button>
+        <button onclick="syncLocalToFirebase()" class="btn btn-success">Final Save</button>
       </div>
       <div class="total-salary-display">
         Total Salary: <span id="totalSalaryDisplay">₹0</span>
@@ -75,6 +76,7 @@
       </table>
     </div>
   </div>
+  
   <script>
   function updateTotalSalary() {
     const basic = parseFloat(document.getElementById('basic').value) || 0;

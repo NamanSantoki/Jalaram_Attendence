@@ -9,7 +9,7 @@
     body {
       font-family: Arial, sans-serif;
       margin: 20px;
-      background-color: #f9f9f9;
+      background-color: #ffffff;
     }
     h2 {
       text-align: center;
@@ -91,6 +91,21 @@
 
     // Display the slip data with updated title
     document.body.innerHTML = decodeURIComponent(slipData);
+    // Append logo and signature
+const headerLogo = `
+  <div style="text-align:center; margin-bottom: 10px;">
+    <img src="Jalaramlogo.jpg" alt="Company Logo" style="width:100px;height:auto;" />
+  </div>
+`;
+
+const footerSignature = `
+  <div style="margin-top: 40px; text-align: right;">
+    <p style="color: white; font-family: 'Brush Script MT', cursive; font-size: 1.5em; margin: 0;">Jalaram Wiremesh Co</p>
+  </div>
+`;
+
+document.body.innerHTML = headerLogo + document.body.innerHTML + footerSignature;
+
     document.title = `Salary Slip - ${decodeURIComponent(empName)} ${decodeURIComponent(formattedMonth)}`;
 
     // Add print button

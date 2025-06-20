@@ -43,8 +43,12 @@
       </div>
     </div>
   </nav>
+    
     <div class="container mt-4">
         <h1 class="text-center mb-4">Employee Loan & Advance</h1>
+       
+        <button onclick="syncLocalToFirebase()" class="btn btn-success">Final Save</button>
+      
         <div class="row">
             <!-- Advance Section -->
             <div class="col-md-6">
@@ -79,7 +83,7 @@
             </div>
         </div>
     </div>
-
+    
     <script>
         const employees = JSON.parse(localStorage.getItem("employees")) || [];
         const advances = JSON.parse(localStorage.getItem("advances")) || {};
