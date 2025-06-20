@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Attendance Marking</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="util.js"></script>
+  <script src="main.js"></script>
+  <link rel="stylesheet" href="main.css">
+  <link rel="stylesheet" href="style.css">
+
+</head>
+
+<body>
+  <nav class="navbar navbar-expand-lg navbar-light bg-white">
+    <div class="container-fluid">
+      <a class="navbar-brand fw-bold" href="#">Jalaram Tools</a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+        aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav ms-auto">
+          <li class="nav-item">
+            <a class="nav-link active" href="main.html">Attendance</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="employees.html">Employees</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="report.html">Monthly Report</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="Loan.html">Loan</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="Advance.html".html">Advance</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="settings.html">Settings</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link text-danger" href="index.html">Logout</a>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+  <div class="container">
+    <h1>Mark Attendance</h1>
+    <div class="card">
+      <h2>Attendance for Selected Month</h2>
+      <div class="input-group">
+        <input style="min-width: 150px;" id="attendanceMonth" type="month" class="form-control">
+        <button  style="border-radius: 10px;" onclick="saveAttendance()" id="saveButton" class="btn btn-primary">Save</button>
+        <button  style="border-radius: 10px;" onclick="syncLocalToFirebase()" id="syncButton" class="btn btn-success" disabled>Upload Local ➜
+          Cloud</button>
+      </div>
+      <div class="attendance-grid">
+        <table class="attendance-table" id="attendanceTable">
+          <thead>
+            <tr id="dateHeader"></tr>
+          </thead>
+          <tbody id="attendanceBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+
+
+    <div class="card hours-section">
+      <h3>Manage Hours</h3>
+      <div class="input-group mb-3">
+        <select style="min-width: 200px;" id="employeeSelect" class="form-select">
+          <option value="">Select Employee</option>
+        </select>
+        <input style="min-width: 205px;" id="hoursDateInput" type="date" class="form-control">
+        <input style="min-width: 200px;" id="extraHoursInput" type="number" class="form-control"
+          placeholder="Extra Hours" step="0.5" min="0">
+        <input style="min-width: 200px;" id="lateHoursInput" type="number" class="form-control" placeholder="Late Hours"
+          step="0.5" min="0">
+        <button style="border-radius: 10px;" onclick="submitHours()" class="btn btn-primary">Submit</button>
+      </div>
+    </div>
+    <div class="card hours-section" id="hoursSummaryCard">
+      <h3>Hours Summary</h3>
+      <table class="summary-table" id="hoursSummaryTable">
+        <thead>
+          <tr>
+            <th>Employee</th>
+            <th>Date</th>
+            <th>Type</th>
+            <th>Hours</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody id="hoursSummaryBody"></tbody>
+      </table>
+    </div>
+  </div>
+  <script type="module">
+
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-app.js";
+    import {
+      getDatabase, ref, set, get
+    } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBpWA8BuNZ8-Yh6eBtyCMsu9GkQO7v0kn4",
+      authDomain: "jalaram-7bbac.firebaseapp.com",
+      projectId: "jalaram-7bbac",
+      storageBucket: "jalaram-7bbac.firebasestorage.app",
+      messagingSenderId: "865915981684",
+      appId: "1:865915981684:web:2d7156ee1ee725773f6621"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    function showToast(message, type = "success") {
+      const toast = document.createElement("div");
+      toast.className = `custom-toast ${type}`;
+      toast.textContent = message;
+      document.body.appendChild(toast);
+
+      setTimeout(() => {
+        toast.classList.add("show");
+        setTimeout(() => {
+          toast.classList.remove("show");
+          setTimeout(() => document.body.removeChild(toast), 300);
+        }, 3000);
+      }, 100);
+    }
+
+    async function syncLocalToFirebase() {
+      // Disable the sync button to prevent multiple clicks
+      document.getElementById('syncButton').disabled = true; // Added this line
+
+      const allKeys = Object.keys(localStorage);
+      for (const key of allKeys) {
+        try {
+          const value = localStorage.getItem(key);
+          const parsed = JSON.parse(value);
+          await set(ref(db, `sync/${key}`), parsed);
+        } catch {
+          await set(ref(db, `sync/${key}`), localStorage.getItem(key));
+        }
+      }
+      // Show the "Attendance Updated" message after a 3-second delay
+      setTimeout(() => {
+        showToast("✔️ Attendance Updated!");
+        // Re-enable the sync button after the message is shown
+        document.getElementById('syncButton').disabled = false; // Added this line
+      }, 3000);
+    }
+
+    async function syncFirebaseToLocal() {
+      const snap = await get(ref(db, 'sync'));
+      if (snap.exists()) {
+        const data = snap.val();
+        Object.keys(data).forEach(key => {
+          localStorage.setItem(key, JSON.stringify(data[key]));
+        });
+        showToast("✔️ Cloud data loaded to local!");
+        // Set a flag in sessionStorage to prevent infinite refresh
+        sessionStorage.setItem('hasRefreshedAfterCloudSync', 'true');
+        location.reload(); // Refresh the page after successful sync
+      } else {
+        showToast("⚠️ No cloud data found", "error");
+      }
+    }
+
+    window.syncLocalToFirebase = syncLocalToFirebase;
+    window.syncFirebaseToLocal = syncFirebaseToLocal;
+
+    // Automatically sync from cloud when the page loads, but only if not already refreshed in this session
+    document.addEventListener('DOMContentLoaded', () => {
+      if (!sessionStorage.getItem('hasRefreshedAfterCloudSync')) {
+        syncFirebaseToLocal();
+      } else {
+        // Clear the flag if the page is loaded normally (e.g., user navigates to it)
+        // This ensures it will sync and refresh again if the user closes and reopens the tab/browser.
+        sessionStorage.removeItem('hasRefreshedAfterCloudSync');
+      }
+      // Add event listener to enable sync button when save is clicked
+      document.getElementById('saveButton').addEventListener('click', () => {
+        document.getElementById('syncButton').disabled = false;
+      });
+    });
+
+  </script>
+
+
+</body>
+
+</html>

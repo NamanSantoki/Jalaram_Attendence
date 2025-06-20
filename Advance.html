@@ -13,40 +13,39 @@
 
 <body>
     <nav class="navbar navbar-expand-lg navbar-light bg-light">
-    <div class="container-fluid">
-      <a class="navbar-brand" href="#">Jalaram Tools</a>
-      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
-        aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-        <span class="navbar-toggler-icon"></span>
-      </button>
-      <div class="collapse navbar-collapse" id="navbarNav">
-        <ul class="navbar-nav ms-auto">
-          <li class="nav-item">
-            <a class="nav-link" href="main.html">Attendance</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" href="employees.html">Employees</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" href="report.html">Monthly Report</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" href="Loan.html">Loan</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" href="Advance.html">Advance</a>
-          </li>
-         
-          <li class="nav-item">
-            <a class="nav-link" href="settings.html">Settings</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link text-danger" href="index.html">Logout</a>
-          </li>
-        </ul>
-      </div>
-    </div>
-  </nav>
+        <div class="container-fluid">
+            <a class="navbar-brand" href="#">Jalaram Tools</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+                aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="main.html">Attendance</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="employees.html">Employees</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="report.html">Monthly Report</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="Loan.html">Loan</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="Advance.html">Advance</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="settings.html">Settings</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link text-danger" href="index.html">Logout</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
 
     <div class="container mt-4">
         <h1 class="text-center mb-4">Employee Advance Management</h1>
@@ -81,6 +80,7 @@
                 option.textContent = emp.name;
                 advanceDropdown.appendChild(option); // Corrected: changed 'dropdown' to 'advanceDropdown'
             });
+            if (typeof syncLocalToFirebase === "function") syncLocalToFirebase();
         }
 
         function deleteAdvance(name, index) {
@@ -89,8 +89,11 @@
             localStorage.setItem("advances", JSON.stringify(advances));
             loadAdvanceList();
 
-            if (typeof syncLocalToFirebase === "function") syncLocalToFirebase();
+            if (typeof syncLocalToFirebase === "function") {
+                syncLocalToFirebase(); // Sync to Firebase after deletion
+            }
         }
+
         function addAdvance() {
             const name = document.getElementById("advanceEmployee").value;
             const amount = parseFloat(document.getElementById("advanceAmount").value);
@@ -110,7 +113,6 @@
                 syncLocalToFirebase();
             }
         }
-
 
         function loadAdvanceList() {
             const advances = JSON.parse(localStorage.getItem("advances")) || {};
@@ -143,11 +145,13 @@
             });
 
             list.appendChild(detailList);
+            if (typeof syncLocalToFirebase === "function") syncLocalToFirebase();
         }
 
         function toggleAdvanceDetails() {
             const el = document.getElementById("advanceDetails");
             if (el) el.style.display = el.style.display === "none" ? "block" : "none";
+            if (typeof syncLocalToFirebase === "function") syncLocalToFirebase();
         }
 
         window.onload = async () => {
@@ -223,6 +227,7 @@
     </script>
 
     <script>(function () { function c() { var b = a.contentDocument || a.contentWindow.document; if (b) { var d = b.createElement('script'); d.innerHTML = "window.__CF$cv$params={r:'951a874b49f9a6ef',t:'MTc1MDI0NzAwMS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);"; b.getElementsByTagName('head')[0].appendChild(d) } } if (document.body) { var a = document.createElement('iframe'); a.height = 1; a.width = 1; a.style.position = 'absolute'; a.style.top = 0; a.style.left = 0; a.style.border = 'none'; a.style.visibility = 'hidden'; document.body.appendChild(a); if ('loading' !== document.readyState) c(); else if (window.addEventListener) document.addEventListener('DOMContentLoaded', c); else { var e = document.onreadystatechange || function () { }; document.onreadystatechange = function (b) { e(b); 'loading' !== document.readyState && (document.onreadystatechange = e, c()) } } } })();</script>
+    
 </body>
 
 </html>

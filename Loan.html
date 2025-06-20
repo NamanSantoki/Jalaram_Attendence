@@ -48,11 +48,10 @@
     </div>
   </nav>
 
-  <div class="container mt-4">
+  <div style="align-items: center; width: 50%;" class="container mt-4">
     <h1 class="text-center mb-4">Employee Loan Management</h1>
-
-    <button onclick="syncLocalToFirebase()" class="btn btn-success">Final Save</button>
-
+    <button style="margin-left: 150px; width: 50%; align-self: center;" onclick="syncLocalToFirebase()" class="btn btn-success">Save</button>
+    <br><br>
     <div class="row">
       <div class="col-md-12">
         <div class="card p-3">
@@ -90,23 +89,31 @@
     }
 
     function addLoan() {
-      const name = document.getElementById("loanEmployee").value;
-      const amount = parseFloat(document.getElementById("loanAmount").value);
-      const emi = parseFloat(document.getElementById("loanEMI").value);
-      if (!name || isNaN(amount) || isNaN(emi) || amount <= 0 || emi <= 0) return alert("Enter valid inputs.");
+  const name = document.getElementById("loanEmployee").value;
+  const amount = parseFloat(document.getElementById("loanAmount").value);
+  const emiInput = document.getElementById("loanEMI").value;
+  const emi = emiInput === "" ? null : parseFloat(emiInput);
 
-      loans[name] = loans[name] || [];
-      loans[name].push({ amount, emi, remaining: amount, date: new Date().toISOString() });
+  if (!name || isNaN(amount) || amount <= 0) return alert("Enter a valid loan amount and employee.");
 
-      localStorage.setItem("loans", JSON.stringify(loans));
-      document.getElementById("loanAmount").value = "";
-      document.getElementById("loanEMI").value = "";
-      loadLoanList();
+  loans[name] = loans[name] || [];
+  loans[name].push({
+    amount,
+    emi: isNaN(emi) ? null : emi,
+    remaining: amount,
+    date: new Date().toISOString()
+  });
 
-      if (typeof syncLocalToFirebase === "function") {
-        syncLocalToFirebase();
-      }
-    }
+  localStorage.setItem("loans", JSON.stringify(loans));
+  document.getElementById("loanAmount").value = "";
+  document.getElementById("loanEMI").value = "";
+  loadLoanList();
+
+  if (typeof syncLocalToFirebase === "function") {
+    syncLocalToFirebase();
+  }
+}
+
 
 
     function applyCustomReturn() {
