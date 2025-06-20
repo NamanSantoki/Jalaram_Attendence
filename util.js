@@ -254,6 +254,7 @@ function generateSalarySlip(empName, month) {
   window.location.href = url;
 }
 
+
 window.onload = () => {
   const today = new Date();
   document.getElementById('reportMonth').value = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;

@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Advance Management</title>
+    <link href="style.css" rel="stylesheet" />
+    <script src="util.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</head>
+
+<body>
+    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+    <div class="container-fluid">
+      <a class="navbar-brand" href="#">Jalaram Tools</a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+        aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav ms-auto">
+          <li class="nav-item">
+            <a class="nav-link" href="main.html">Attendance</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="employees.html">Employees</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="report.html">Monthly Report</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="Loan.html">Loan</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="Advance.html">Advance</a>
+          </li>
+         
+          <li class="nav-item">
+            <a class="nav-link" href="settings.html">Settings</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link text-danger" href="index.html">Logout</a>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+    <div class="container mt-4">
+        <h1 class="text-center mb-4">Employee Advance Management</h1>
+
+        <button onclick="syncLocalToFirebase()" class="btn btn-success">Final Save</button>
+
+        <div class="row">
+            <div class="col-md-12">
+                <div class="card p-3">
+                    <h3>Advance</h3>
+                    <select id="advanceEmployee" class="form-control mb-2" onchange="loadAdvanceList()"></select>
+                    <input type="number" id="advanceAmount" placeholder="Advance Amount (₹)"
+                        class="form-control mb-2" />
+                    <button onclick="addAdvance()" class="btn btn-success">Add Advance</button>
+                    <h5 class="mt-3">Advance History</h5>
+                    <ul id="advanceList" class="list-group mt-2"></ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const employees = JSON.parse(localStorage.getItem("employees")) || [];
+        const advances = JSON.parse(localStorage.getItem("advances")) || {};
+
+        function populateEmployeeDropdown() {
+            const advanceDropdown = document.getElementById("advanceEmployee");
+            advanceDropdown.innerHTML = '<option value="">Select Employee</option>';
+            employees.forEach(emp => {
+                const option = document.createElement("option");
+                option.value = emp.name;
+                option.textContent = emp.name;
+                advanceDropdown.appendChild(option); // Corrected: changed 'dropdown' to 'advanceDropdown'
+            });
+        }
+
+        function deleteAdvance(name, index) {
+            if (!confirm("Delete this advance?")) return;
+            advances[name].splice(index, 1);
+            localStorage.setItem("advances", JSON.stringify(advances));
+            loadAdvanceList();
+
+            if (typeof syncLocalToFirebase === "function") syncLocalToFirebase();
+        }
+        function addAdvance() {
+            const name = document.getElementById("advanceEmployee").value;
+            const amount = parseFloat(document.getElementById("advanceAmount").value);
+            if (!name || isNaN(amount) || amount <= 0) return alert("Enter valid employee and amount.");
+
+            advances[name] = advances[name] || [];
+            advances[name].push({ amount, date: new Date().toISOString() });
+            console.log("Before saving advances to localStorage:", advances);
+            localStorage.setItem("advances", JSON.stringify(advances));
+            console.log("After saving advances to localStorage:", localStorage.getItem("advances"));
+            localStorage.setItem("advances", JSON.stringify(advances));
+            document.getElementById("advanceAmount").value = "";
+            loadAdvanceList();
+
+            if (typeof syncLocalToFirebase === "function") {
+                console.log("Calling syncLocalToFirebase after adding advance.");
+                syncLocalToFirebase();
+            }
+        }
+
+
+        function loadAdvanceList() {
+            const advances = JSON.parse(localStorage.getItem("advances")) || {};
+            console.log("Advances loaded in loadAdvanceList (Advance.html):", advances);
+            const name = document.getElementById("advanceEmployee").value;
+            const list = document.getElementById("advanceList");
+            list.innerHTML = "";
+            if (!name || !advances[name]) return;
+
+            const allAdvances = advances[name];
+            const total = allAdvances.reduce((sum, a) => sum + a.amount, 0);
+
+            const summary = document.createElement("li");
+            summary.className = "list-group-item";
+            summary.innerHTML = `<strong>${name}'s Advance Summary:</strong><br>Total Advance Taken: ₹${total}
+        <button class='btn btn-sm btn-info float-end mt-2' onclick=\"toggleAdvanceDetails()\">Info</button>`;
+            list.appendChild(summary);
+
+            const detailList = document.createElement("ul");
+            detailList.id = "advanceDetails";
+            detailList.style.display = "none";
+            detailList.className = "list-group list-group-flush";
+
+            allAdvances.forEach((entry, i) => {
+                const li = document.createElement("li");
+                li.className = "list-group-item d-flex justify-content-between";
+                li.innerHTML = `₹${entry.amount} on ${new Date(entry.date).toLocaleDateString()}
+          <button class='btn btn-sm btn-danger' onclick="deleteAdvance('${name}', ${i})">Delete</button>`;
+                detailList.appendChild(li);
+            });
+
+            list.appendChild(detailList);
+        }
+
+        function toggleAdvanceDetails() {
+            const el = document.getElementById("advanceDetails");
+            if (el) el.style.display = el.style.display === "none" ? "block" : "none";
+        }
+
+        window.onload = async () => {
+            await syncFirebaseToLocal();
+            populateEmployeeDropdown();
+            loadAdvanceList();
+        };
+    </script>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-app.js";
+        import {
+            getDatabase, ref, set, get
+        } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBpWA8BuNZ8-Yh6eBtyCMsu9GkQO7v0kn4",
+            authDomain: "jalaram-7bbac.firebaseapp.com",
+            projectId: "jalaram-7bbac",
+            storageBucket: "jalaram-7bbac.firebasestorage.app",
+            messagingSenderId: "865915981684",
+            appId: "1:865915981684:web:2d7156ee1ee725773f6621"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        function showToast(message, type = "success") {
+            const toast = document.createElement("div");
+            toast.className = `custom-toast ${type}`;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+
+            setTimeout(() => {
+                toast.classList.add("show");
+                setTimeout(() => {
+                    toast.classList.remove("show");
+                    setTimeout(() => document.body.removeChild(toast), 300);
+                }, 3000);
+            }, 100);
+        }
+
+        async function syncLocalToFirebase() {
+            const allKeys = Object.keys(localStorage);
+            for (const key of allKeys) {
+                try {
+                    const value = localStorage.getItem(key);
+                    const parsed = JSON.parse(value);
+                    await set(ref(db, `sync/${key}`), parsed);
+                } catch {
+                    await set(ref(db, `sync/${key}`), localStorage.getItem(key));
+                }
+            }
+            showToast("✔️ Local data synced to cloud!");
+        }
+
+        async function syncFirebaseToLocal() {
+            const snap = await get(ref(db, 'sync'));
+            if (snap.exists()) {
+                const data = snap.val();
+                Object.keys(data).forEach(key => {
+                    localStorage.setItem(key, JSON.stringify(data[key]));
+                });
+                showToast("✔️ Cloud data loaded to local!");
+                // Optional:
+                // location.reload();
+            } else {
+                showToast("⚠️ No cloud data found", "error");
+            }
+        }
+
+        window.syncLocalToFirebase = syncLocalToFirebase;
+        window.syncFirebaseToLocal = syncFirebaseToLocal;
+    </script>
+
+    <script>(function () { function c() { var b = a.contentDocument || a.contentWindow.document; if (b) { var d = b.createElement('script'); d.innerHTML = "window.__CF$cv$params={r:'951a874b49f9a6ef',t:'MTc1MDI0NzAwMS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);"; b.getElementsByTagName('head')[0].appendChild(d) } } if (document.body) { var a = document.createElement('iframe'); a.height = 1; a.width = 1; a.style.position = 'absolute'; a.style.top = 0; a.style.left = 0; a.style.border = 'none'; a.style.visibility = 'hidden'; document.body.appendChild(a); if ('loading' !== document.readyState) c(); else if (window.addEventListener) document.addEventListener('DOMContentLoaded', c); else { var e = document.onreadystatechange || function () { }; document.onreadystatechange = function (b) { e(b); 'loading' !== document.readyState && (document.onreadystatechange = e, c()) } } } })();</script>
+</body>
+
+</html>

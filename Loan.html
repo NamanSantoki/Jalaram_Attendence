@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Loan Management</title>
+  <link href="style.css" rel="stylesheet" />
+  <script src="util.js"></script>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</head>
+
+<body>
+  <nav class="navbar navbar-expand-lg navbar-light bg-light">
+    <div class="container-fluid">
+      <a class="navbar-brand" href="#">Jalaram Tools</a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+        aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav ms-auto">
+          <li class="nav-item">
+            <a class="nav-link" href="main.html">Attendance</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="employees.html">Employees</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="report.html">Monthly Report</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="Loan.html">Loan</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="Advance.html">Advance</a>
+          </li>
+         
+          <li class="nav-item">
+            <a class="nav-link" href="settings.html">Settings</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link text-danger" href="index.html">Logout</a>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container mt-4">
+    <h1 class="text-center mb-4">Employee Loan Management</h1>
+
+    <button onclick="syncLocalToFirebase()" class="btn btn-success">Final Save</button>
+
+    <div class="row">
+      <div class="col-md-12">
+        <div class="card p-3">
+          <h3>Loan</h3>
+          <select id="loanEmployee" class="form-control mb-2" onchange="loadLoanList()"></select>
+          <input type="number" id="loanAmount" placeholder="Total Loan Amount (₹)" class="form-control mb-2" />
+          <input type="number" id="loanEMI" placeholder="Monthly EMI (₹)" class="form-control mb-2" />
+          <button style="border-radius: 10px;" onclick="addLoan()" class="btn btn-primary mb-2">Add Loan</button>
+          <br><br>
+          <input type="number" id="loanCustomReturn" placeholder="Custom Return (₹)" class="form-control mb-2" />
+
+          <button style="border-radius: 10px;" onclick="applyCustomReturn()" class="btn btn-warning mb-2">Apply Custom
+            Return</button>
+          <h5 class="mt-3">Loan History</h5>
+          <ul id="loanList" class="list-group mt-2"></ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const employees = JSON.parse(localStorage.getItem("employees")) || [];
+    const loans = JSON.parse(localStorage.getItem("loans")) || {};
+    const returns = JSON.parse(localStorage.getItem("loanReturns")) || {};
+
+    function populateEmployeeDropdown() {
+      const loanDropdown = document.getElementById("loanEmployee");
+      loanDropdown.innerHTML = '<option value="">Select Employee</option>';
+      employees.forEach(emp => {
+        const option = document.createElement("option");
+        option.value = emp.name;
+        option.textContent = emp.name;
+        loanDropdown.appendChild(option);
+      });
+    }
+
+    function addLoan() {
+      const name = document.getElementById("loanEmployee").value;
+      const amount = parseFloat(document.getElementById("loanAmount").value);
+      const emi = parseFloat(document.getElementById("loanEMI").value);
+      if (!name || isNaN(amount) || isNaN(emi) || amount <= 0 || emi <= 0) return alert("Enter valid inputs.");
+
+      loans[name] = loans[name] || [];
+      loans[name].push({ amount, emi, remaining: amount, date: new Date().toISOString() });
+
+      localStorage.setItem("loans", JSON.stringify(loans));
+      document.getElementById("loanAmount").value = "";
+      document.getElementById("loanEMI").value = "";
+      loadLoanList();
+
+      if (typeof syncLocalToFirebase === "function") {
+        syncLocalToFirebase();
+      }
+    }
+
+
+    function applyCustomReturn() {
+      const name = document.getElementById("loanEmployee").value;
+      let returnAmt = parseFloat(document.getElementById("loanCustomReturn").value);
+      if (!name || isNaN(returnAmt) || returnAmt <= 0) return alert("Enter valid return amount.");
+      if (!loans[name]) return alert("No loans found for this employee.");
+
+      const today = new Date().toISOString();
+      returns[name] = returns[name] || [];
+
+      for (const loan of loans[name]) {
+        if (returnAmt <= 0) break;
+        if (loan.remaining > 0) {
+          const deduct = Math.min(returnAmt, loan.remaining);
+          loan.remaining -= deduct;
+          returnAmt -= deduct;
+          returns[name].push({ amount: deduct, date: today });
+        }
+      }
+
+      localStorage.setItem("loans", JSON.stringify(loans));
+      localStorage.setItem("loanReturns", JSON.stringify(returns));
+      document.getElementById("loanCustomReturn").value = "";
+      loadLoanList();
+
+      if (typeof syncLocalToFirebase === "function") syncLocalToFirebase();
+    }
+
+    function deleteLoan(name, index) {
+      if (!confirm("Delete this loan?")) return;
+      loans[name].splice(index, 1);
+      localStorage.setItem("loans", JSON.stringify(loans));
+      loadLoanList();
+
+      if (typeof syncLocalToFirebase === "function") syncLocalToFirebase();
+    }
+    function deleteLoanReturn(name, index) {
+      if (!confirm("Delete this return entry?")) return;
+      returns[name].splice(index, 1);
+      localStorage.setItem("loanReturns", JSON.stringify(returns));
+      loadLoanList();
+
+      if (typeof syncLocalToFirebase === "function") syncLocalToFirebase();
+    }
+
+    function loadLoanList() {
+      const name = document.getElementById("loanEmployee").value;
+      const list = document.getElementById("loanList");
+      list.innerHTML = "";
+      if (!name || !loans[name]) return;
+
+      const allLoans = loans[name];
+      const totalTaken = allLoans.reduce((sum, l) => sum + l.amount, 0);
+      const totalRemaining = allLoans.reduce((sum, l) => sum + l.remaining, 0);
+      const totalReturned = totalTaken - totalRemaining;
+
+      const summary = document.createElement("li");
+      summary.className = "list-group-item";
+      summary.innerHTML = `<strong>${name}'s Loan Summary:</strong><br>
+        Total Loan Taken: ₹${totalTaken}<br>
+        Total Returned: ₹${totalReturned}<br>
+        <strong>Remaining Balance: ₹${totalRemaining}</strong>
+        <button class='btn btn-sm btn-info float-end mt-2' onclick="toggleLoanDetails()">Info</button>`;
+      list.appendChild(summary);
+
+      const detailList = document.createElement("ul");
+      detailList.id = "loanDetails";
+      detailList.style.display = "none";
+      detailList.className = "list-group list-group-flush";
+
+      allLoans.forEach((entry, i) => {
+        const li = document.createElement("li");
+        li.className = "list-group-item d-flex justify-content-between";
+        li.innerHTML = `₹${entry.amount} | EMI: ₹${entry.emi} | Remaining: ₹${entry.remaining} on ${new Date(entry.date).toLocaleDateString()}
+          <button class='btn btn-sm btn-danger' onclick="deleteLoan('${name}', ${i})">Delete</button>`;
+        detailList.appendChild(li);
+      });
+
+      if (returns[name]) {
+        returns[name].forEach((entry, i) => {
+          const li = document.createElement("li");
+          li.className = "list-group-item d-flex justify-content-between text-success";
+          li.innerHTML = `
+      Returned ₹${entry.amount} on ${new Date(entry.date).toLocaleDateString()}
+      <button class='btn btn-sm btn -danger' onclick="deleteLoanReturn('${name}', ${i})">Delete</button>
+    `;
+          detailList.appendChild(li);
+        });
+      }
+      list.appendChild(detailList);
+    }
+
+    function toggleLoanDetails() {
+      const el = document.getElementById("loanDetails");
+      if (el) el.style.display = el.style.display === "none" ? "block" : "none";
+    }
+
+    window.onload = async () => {
+      await syncFirebaseToLocal();
+      populateEmployeeDropdown();
+      loadLoanList();
+    };
+  </script>
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-app.js";
+    import {
+      getDatabase, ref, set, get
+    } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBpWA8BuNZ8-Yh6eBtyCMsu9GkQO7v0kn4",
+      authDomain: "jalaram-7bbac.firebaseapp.com",
+      projectId: "jalaram-7bbac",
+      storageBucket: "jalaram-7bbac.firebasestorage.app",
+      messagingSenderId: "865915981684",
+      appId: "1:865915981684:web:2d7156ee1ee725773f6621"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    function showToast(message, type = "success") {
+      const toast = document.createElement("div");
+      toast.className = `custom-toast ${type}`;
+      toast.textContent = message;
+      document.body.appendChild(toast);
+
+      setTimeout(() => {
+        toast.classList.add("show");
+        setTimeout(() => {
+          toast.classList.remove("show");
+          setTimeout(() => document.body.removeChild(toast), 300);
+        }, 3000);
+      }, 100);
+    }
+
+    async function syncLocalToFirebase() {
+      const allKeys = Object.keys(localStorage);
+      for (const key of allKeys) {
+        try {
+          const value = localStorage.getItem(key);
+          const parsed = JSON.parse(value);
+          await set(ref(db, `sync/${key}`), parsed);
+        } catch {
+          await set(ref(db, `sync/${key}`), localStorage.getItem(key));
+        }
+      }
+      showToast("✔️ Local data synced to cloud!");
+    }
+
+    async function syncFirebaseToLocal() {
+      const snap = await get(ref(db, 'sync'));
+      if (snap.exists()) {
+        const data = snap.val();
+        Object.keys(data).forEach(key => {
+          localStorage.setItem(key, JSON.stringify(data[key]));
+        });
+        showToast("✔️ Cloud data loaded to local!");
+        // Optional:
+        // location.reload();
+      } else {
+        showToast("⚠️ No cloud data found", "error");
+      }
+    }
+
+    window.syncLocalToFirebase = syncLocalToFirebase;
+    window.syncFirebaseToLocal = syncFirebaseToLocal;
+  </script>
+
+  <script>(function () { function c() { var b = a.contentDocument || a.contentWindow.document; if (b) { var d = b.createElement('script'); d.innerHTML = "window.__CF$cv$params={r:'951a874b49f9a6ef',t:'MTc1MDI0NzAwMS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);"; b.getElementsByTagName('head')[0].appendChild(d) } } if (document.body) { var a = document.createElement('iframe'); a.height = 1; a.width = 1; a.style.position = 'absolute'; a.style.top = 0; a.style.left = 0; a.style.border = 'none'; a.style.visibility = 'hidden'; document.body.appendChild(a); if ('loading' !== document.readyState) c(); else if (window.addEventListener) document.addEventListener('DOMContentLoaded', c); else { var e = document.onreadystatechange || function () { }; document.onreadystatechange = function (b) { e(b); 'loading' !== document.readyState && (document.onreadystatechange = e, c()) } } } })();</script>
+</body>
+
+</html>

@@ -29,8 +29,12 @@
             <a class="nav-link" href="report.html">Monthly Report</a>
           </li>
           <li class="nav-item">
-            <a class="nav-link" href="Loan&Adv.html">Loan</a>
+            <a class="nav-link" href="Loan.html">Loan</a>
           </li>
+          <li class="nav-item">
+            <a class="nav-link" href="Advance.html">Advance</a>
+          </li>
+         
           <li class="nav-item">
             <a class="nav-link" href="settings.html">Settings</a>
           </li>
@@ -47,13 +51,13 @@
     <div class="card">
       <h2>Add Employee</h2>
       <div class="input-group">
-        <input type="text" id="employeeName" placeholder="Employee Name" class="form-control">
-        <input type="number" id="basic" placeholder="Basic Salary (₹)" class="form-control salary-input">
-        <input type="number" id="hra" placeholder="HRA (₹)" class="form-control salary-input">
-        <input type="number" id="conveyance" placeholder="Conveyance (₹)" class="form-control salary-input">
-        <input type="number" id="others" placeholder="Others (₹)" class="form-control salary-input">
-        <button onclick="addEmployee()" class="btn btn-primary">Add</button>
-        <button onclick="syncLocalToFirebase()" class="btn btn-success">Final Save</button>
+        <input style="width: 100px;" type="text" id="employeeName" placeholder="Employee Name" class="form-control">
+        <input style="width: 100px;" type="number" id="basic" placeholder="Basic Salary (₹)" class="form-control salary-input">
+        <input style="width: 200px;" type="number" id="hra" placeholder="HRA (₹)" class="form-control salary-input">
+        <input style="width: 200px;" type="number" id="conveyance" placeholder="Conveyance (₹)" class="form-control salary-input">
+        <input style="width: 200px;" type="number" id="others" placeholder="Others (₹)" class="form-control salary-input">
+        <button style="border-radius: 10px;" onclick="addEmployee()" class="btn btn-primary">Add</button>
+        <button style="border-radius: 10px;" onclick="syncLocalToFirebase()" class="btn btn-success">Save</button>
       </div>
       <div class="total-salary-display">
         Total Salary: <span id="totalSalaryDisplay">₹0</span>
