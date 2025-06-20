@@ -54,9 +54,9 @@
     <div class="card">
       <h2>Attendance for Selected Month</h2>
       <div class="input-group">
-        <input style="min-width: 100px;" id="attendanceMonth" type="month" class="form-control">
-        <button onclick="saveAttendance()" id="saveButton" class="btn btn-primary">Save</button>
-        <button onclick="syncLocalToFirebase()" id="syncButton" class="btn btn-success" disabled>Upload Local ➜
+        <input style="min-width: 150px;" id="attendanceMonth" type="month" class="form-control">
+        <button  style="border-radius: 10px;" onclick="saveAttendance()" id="saveButton" class="btn btn-primary">Save</button>
+        <button  style="border-radius: 10px;" onclick="syncLocalToFirebase()" id="syncButton" class="btn btn-success" disabled>Upload Local ➜
           Cloud</button>
       </div>
       <div class="attendance-grid">
@@ -74,15 +74,15 @@
     <div class="card hours-section">
       <h3>Manage Hours</h3>
       <div class="input-group mb-3">
-        <select style="min-width: 100px;" id="employeeSelect" class="form-select">
+        <select style="min-width: 200px;" id="employeeSelect" class="form-select">
           <option value="">Select Employee</option>
         </select>
-        <input style="min-width: 125px;" id="hoursDateInput" type="date" class="form-control"><br><br>
-        <input style="min-width: 100px;" id="extraHoursInput" type="number" class="form-control"
-          placeholder="Extra Hours" step="0.5" min="0"><br><br>
-        <input style="min-width: 100px;" id="lateHoursInput" type="number" class="form-control" placeholder="Late Hours"
+        <input style="min-width: 205px;" id="hoursDateInput" type="date" class="form-control">
+        <input style="min-width: 200px;" id="extraHoursInput" type="number" class="form-control"
+          placeholder="Extra Hours" step="0.5" min="0">
+        <input style="min-width: 200px;" id="lateHoursInput" type="number" class="form-control" placeholder="Late Hours"
           step="0.5" min="0">
-        <button onclick="submitHours()" class="btn btn-primary">Submit</button>
+        <button style="border-radius: 10px;" onclick="submitHours()" class="btn btn-primary">Submit</button>
       </div>
     </div>
     <div class="card hours-section" id="hoursSummaryCard">
