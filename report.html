@@ -1,24 +1,97 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Employee Salaries</title>
   <script src="util.js"></script>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
- 
+
   <style>
-    .table-container { padding: 20px; }
-    th, td { text-align: center; }
+    .table-container {
+      padding: 10px;
+    }
+
+    .table {
+      font-size: 0.85em;
+      /* Reduce font size for compactness */
+      width: 100%;
+      margin-bottom: 0;
+    }
+
+    th,
+    td {
+      text-align: center;
+      padding: 4px;
+      /* Reduce padding */
+      white-space: nowrap;
+      /* Prevent text wrapping */
+      overflow: hidden;
+      text-overflow: ellipsis;
+      /* Handle overflow with ellipsis */
+    }
+
+    th {
+      background-color: #f8f9fa;
+      /* Light background for headers */
+      font-weight: bold;
+    }
+
+    td {
+      vertical-align: middle;
+      /* Center content vertically */
+    }
+
     select.shift-select {
-      width: 90px;
-      font-size: 0.9em;
+      width: 60px;
+      /* Reduce dropdown width */
+      font-size: 0.85em;
+      /* Match table font size */
+      padding: 2px;
+      height: 24px;
+      /* Compact height */
+    }
+
+    .hours-cell {
+      padding: 2px;
+    }
+
+    .net-salary {
+      font-weight: bold;
+    }
+
+    .btn-sm {
+      padding: 2px 6px;
+      /* Compact button size */
+      font-size: 0.75em;
+    }
+
+    @media print {
+      .no-print {
+        display: none;
+      }
+
+      .table-container {
+        width: 100%;
+        padding: 0;
+      }
+
+      .table {
+        font-size: 0.75em;
+      }
+
+      th,
+      td {
+        padding: 2px;
+      }
     }
   </style>
 </head>
+
 <body>
-  <nav class="navbar navbar-expand-lg navbar-light bg-light">
+  <nav class="navbar navbar-expand-lg navbar-light bg-light no-print">
     <div class="container-fluid">
       <a class="navbar-brand" href="#">Jalaram Tools</a>
       <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
@@ -28,7 +101,7 @@
       <div class="collapse navbar-collapse" id="navbarNav">
         <ul class="navbar-nav ms-auto">
           <li class="nav-item">
-            <a class="nav-link" href="main.html">Attendance</a>
+            <a class="nav-link" href="main1.html">Attendance</a>
           </li>
           <li class="nav-item">
             <a class="nav-link" href="employees.html">Employees</a>
@@ -42,7 +115,6 @@
           <li class="nav-item">
             <a class="nav-link" href="Advance.html">Advance</a>
           </li>
-         
           <li class="nav-item">
             <a class="nav-link" href="settings.html">Settings</a>
           </li>
@@ -53,101 +125,45 @@
       </div>
     </div>
   </nav>
-  
 
-  <div style="width: 90;" class="table-container">
+
+  <div style="width: 90%;" class="table-container">
     <h1>Employee Salaries</h1>
 
-    <div style="width: 50%; " class="mb-3">
+    <div style="width: 50%;" class="mb-2 no-print">
       <label for="reportMonth" class="form-label">Select Month</label>
-      <input type="month" id="reportMonth" class="form-control" />
+      <input type="month" id="reportMonth" class="form-control" style="font-size: 0.85em; padding: 4px;" />
     </div>
-    
-    <button onclick="syncLocalToFirebase()" class="btn btn-success">Final Save</button>
-  
-    </div>
+
+    <button onclick="syncLocalToFirebase()" class="btn btn-success btn-sm no-print">Final Save</button>
+    <button onclick="window.print()" class="btn btn-primary btn-sm no-print ms-2">Print</button>
 
     <table class="table table-bordered">
       <thead>
         <tr>
-          <th>S. No.</th><th>Employee Name</th><th>Shift</th><th>Basic (₹)</th><th>HRA (₹)</th><th>Conveyance (₹)</th><th>Others (₹)</th>
-          <th>Total Salary (₹)</th><th>Days Present</th><th>Days Absent</th><th>Advance Given (₹)</th>
-          <th>Loan Given (₹)</th><th>Loan Repaid (₹)</th><th>Loan Left (₹)</th><th>Days Adjustment</th>
-          <th>Hours Adjustment</th><th>Net Salary (₹)</th><th>Action</th>
+          <th>S. No.</th>
+          <th>Emp Name</th>
+          <th>Shift</th>
+          <th>Basic (₹)</th>
+          <th>HRA (₹)</th>
+          <th>Convey (₹)</th>
+          <th>Others (₹)</th>
+          <th>Tot Sal (₹)</th>
+          <th>Pres Days</th>
+          <th>Abs Days</th>
+          <th>Adv Given (₹)</th>
+          <th>Loan Given (₹)</th>
+          <th>Loan Repd (₹)</th>
+          <th>Loan Left (₹)</th>
+          <th>Day Adj</th>
+          <th>Hour Adj</th>
+          <th>Net Sal (₹)</th>
+          <th>Action</th>
         </tr>
       </thead>
       <tbody id="salaryTableBody"></tbody>
     </table>
   </div>
-  
-</div>
-  </script>
-  <script>(function () { function c() { var b = a.contentDocument || a.contentWindow.document; if (b) { var d = b.createElement('script'); d.innerHTML = "window.__CF$cv$params={r:'951a89091acca6ef',t:'MTc1MDI0NzA3Mi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);"; b.getElementsByTagName('head')[0].appendChild(d) } } if (document.body) { var a = document.createElement('iframe'); a.height = 1; a.width = 1; a.style.position = 'absolute'; a.style.top = 0; a.style.left = 0; a.style.border = 'none'; a.style.visibility = 'hidden'; document.body.appendChild(a); if ('loading' !== document.readyState) c(); else if (window.addEventListener) document.addEventListener('DOMContentLoaded', c); else { var e = document.onreadystatechange || function () { }; document.onreadystatechange = function (b) { e(b); 'loading' !== document.readyState && (document.onreadystatechange = e, c()) } } } })();</script>
-  <script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-app.js";
-  import {
-    getDatabase, ref, set, get
-  } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-database.js";
-
-  const firebaseConfig = {
-    apiKey: "AIzaSyBpWA8BuNZ8-Yh6eBtyCMsu9GkQO7v0kn4",
-    authDomain: "jalaram-7bbac.firebaseapp.com",
-    projectId: "jalaram-7bbac",
-    storageBucket: "jalaram-7bbac.firebasestorage.app",
-    messagingSenderId: "865915981684",
-    appId: "1:865915981684:web:2d7156ee1ee725773f6621"
-  };
-
-  const app = initializeApp(firebaseConfig);
-  const db = getDatabase(app);
-
-  function showToast(message, type = "success") {
-    const toast = document.createElement("div");
-    toast.className = `custom-toast ${type}`;
-    toast.textContent = message;
-    document.body.appendChild(toast);
-
-    setTimeout(() => {
-      toast.classList.add("show");
-      setTimeout(() => {
-        toast.classList.remove("show");
-        setTimeout(() => document.body.removeChild(toast), 300);
-      }, 3000);
-    }, 100);
-  }
-
-  async function syncLocalToFirebase() {
-    const allKeys = Object.keys(localStorage);
-    for (const key of allKeys) {
-      try {
-        const value = localStorage.getItem(key);
-        const parsed = JSON.parse(value);
-        await set(ref(db, `sync/${key}`), parsed);
-      } catch {
-        await set(ref(db, `sync/${key}`), localStorage.getItem(key));
-      }
-    }
-    showToast("✔️ Local data synced to cloud!");
-  }
-
-  async function syncFirebaseToLocal() {
-    const snap = await get(ref(db, 'sync'));
-    if (snap.exists()) {
-      const data = snap.val();
-      Object.keys(data).forEach(key => {
-        localStorage.setItem(key, JSON.stringify(data[key]));
-      });
-      showToast("✔️ Cloud data loaded to local!");
-      // Optional:
-      // location.reload();
-    } else {
-      showToast("⚠️ No cloud data found", "error");
-    }
-  }
-
-  window.syncLocalToFirebase = syncLocalToFirebase;
-  window.syncFirebaseToLocal = syncFirebaseToLocal;
-</script>
 
   <script>
     const employees = JSON.parse(localStorage.getItem('employees')) || [];
@@ -156,6 +172,7 @@
     const loans = JSON.parse(localStorage.getItem('loans')) || {};
     const extraHours = JSON.parse(localStorage.getItem('extraHours')) || {};
     const lateHours = JSON.parse(localStorage.getItem('lateHours')) || {};
+    const hoursHistory = JSON.parse(localStorage.getItem('hoursHistory')) || [];
 
     const shiftData = {}; // stores each employee's selected shift
 
@@ -168,9 +185,14 @@
       const month = parseInt(monthKey.substring(5, 7)) - 1;
       const daysInMonth = new Date(year, month + 1, 0).getDate();
 
+      // Initialize sums for numeric columns
+      let sumBasic = 0, sumHra = 0, sumConveyance = 0, sumOthers = 0, sumTotalSalary = 0;
+      let sumPresentDays = 0, sumAbsentDays = 0, sumTotalAdvance = 0;
+      let sumLoanGiven = 0, sumLoanRepaid = 0, sumLoanLeft = 0, sumNetSalary = 0;
+
       employees.forEach(emp => {
         if (emp && emp.name) {
-          const shiftHours = shiftData[emp.name] || 12; // default to 12h
+          const shiftHours = shiftData[emp.name] || 12; // Use the specific employee's shift or default to 12
 
           const basic = parseFloat(emp.basic) || 0;
           const hra = parseFloat(emp.hra) || 0;
@@ -187,7 +209,14 @@
               attendance[date][emp.name] === true ? presentDays++ : absentDays++;
             }
           }
-          if (attendedDays.size === 0) absentDays = daysInMonth;
+          if (attendedDays.size === 0) {
+            absentDays = daysInMonth;
+          } else {
+            const totalRecordedDays = presentDays + absentDays;
+            if (totalRecordedDays !== daysInMonth) {
+              presentDays = daysInMonth - absentDays;
+            }
+          }
 
           const advanceList = advances[emp.name] || [];
           const totalAdvance = advanceList.reduce((sum, adv) => sum + (adv.amount || 0), 0);
@@ -200,30 +229,53 @@
             if (l.remaining) totalLoanLeft += l.remaining;
           });
 
-          let totalExtraHours = 0, totalLateHours = 0;
-          let hasHoursData = false;
-          for (let day = 1; day <= daysInMonth; day++) {
-            const date = `${monthKey}-${String(day).padStart(2, '0')}`;
-            const extra = extraHours[date]?.[emp.name] || 0;
-            const late = lateHours[date]?.[emp.name] || 0;
-            if (extra > 0 || late > 0) hasHoursData = true;
-            totalExtraHours += extra;
-            totalLateHours += late;
+          // Calculate net hours from hoursHistory for the month
+          const netHours = hoursHistory
+            .filter(record => record.employee === emp.name && record.date.startsWith(`${monthKey}`))
+            .reduce((sum, record) => sum + (record.type === 'late' ? -record.hours : record.hours), 0);
+
+          // Adjust fullDays and remainingHours correctly for both positive and negative netHours
+          let fullDays = 0, remainingHours = 0;
+
+          if (netHours >= 0) {
+            fullDays = Math.floor(netHours / shiftHours);
+            remainingHours = netHours % shiftHours;
+          } else {
+            fullDays = Math.ceil(netHours / shiftHours); // Properly round up towards zero
+            remainingHours = netHours - (fullDays * shiftHours);
           }
 
-          const netHours = hasHoursData ? totalExtraHours - totalLateHours : 0;
-          const fullDays = hasHoursData ? Math.floor(netHours / shiftHours) : 0;
-          const remainingHours = hasHoursData ? netHours % shiftHours : 0;
+          // Format day/hour strings
           const daysDisplay = fullDays === 0 ? '0d' : `${fullDays > 0 ? '+' : ''}${fullDays}d`;
           const hoursDisplay = remainingHours === 0 ? '0h' : `${remainingHours > 0 ? '+' : ''}${remainingHours.toFixed(1)}h`;
+
 
           const perDaySalary = totalSalary / daysInMonth;
           const absenceDeduction = perDaySalary * absentDays;
           const daysAdjustmentAmount = fullDays * perDaySalary;
           const hourlyRate = perDaySalary / shiftHours;
           const initialSalary = totalSalary - absenceDeduction - totalAdvance + daysAdjustmentAmount;
-          const hoursAdjustment = hasHoursData ? remainingHours * hourlyRate : 0;
-          const netSalary = initialSalary;
+          const hoursAdjustment = remainingHours * hourlyRate;
+          const netSalary = Math.round(initialSalary + (hoursAdjustment || 0));
+
+          // Update sums
+          sumBasic += basic;
+          sumHra += hra;
+          sumConveyance += conveyance;
+          sumOthers += others;
+          sumTotalSalary += totalSalary;
+          sumPresentDays += presentDays;
+          sumAbsentDays += absentDays;
+          sumTotalAdvance += totalAdvance;
+          sumLoanGiven += totalLoanGiven;
+          sumLoanRepaid += totalLoanRepaid;
+          sumLoanLeft += totalLoanLeft;
+          sumNetSalary += netSalary;
+
+          // Format monetary values to remove .00 when whole number
+          const formatMoney = (value) => {
+            return Number.isInteger(value) ? `₹${Math.floor(value)}` : `₹${value.toFixed(2)}`;
+          };
 
           const empDetails = {
             basic, hra, conveyance, others, totalSalary,
@@ -238,33 +290,63 @@
             <td>${tbody.children.length + 1}</td>
             <td>${emp.name}</td>
             <td>
-              <select class="shift-select" onchange="changeShift('${emp.name}', this.value)">
+              <select class="shift-select no-print" onchange="changeShift('${emp.name}', this.value)">
                 <option value="8" ${shiftHours === 8 ? 'selected' : ''}>8h</option>
                 <option value="12" ${shiftHours === 12 ? 'selected' : ''}>12h</option>
               </select>
+              <span class="print-only">${shiftHours}h</span>
             </td>
-            <td>₹${Math.round(basic)}</td>
-            <td>₹${Math.round(hra)}</td>
-            <td>₹${Math.round(conveyance)}</td>
-            <td>₹${Math.round(others)}</td>
-            <td>₹${Math.round(totalSalary)}</td>
+            <td>${formatMoney(basic)}</td>
+            <td>${formatMoney(hra)}</td>
+            <td>${formatMoney(conveyance)}</td>
+            <td>${formatMoney(others)}</td>
+            <td>${formatMoney(totalSalary)}</td>
             <td>${presentDays}</td>
             <td>${absentDays}</td>
-            <td>₹${Math.round(totalAdvance)}</td>
-            <td>₹${Math.round(totalLoanGiven)}</td>
-            <td>₹${Math.round(totalLoanRepaid)}</td>
-            <td>₹${Math.round(totalLoanLeft)}</td>
+            <td>${formatMoney(totalAdvance)}</td>
+            <td>${formatMoney(totalLoanGiven)}</td>
+            <td>${formatMoney(totalLoanRepaid)}</td>
+            <td>${formatMoney(totalLoanLeft)}</td>
             <td>${daysDisplay}</td>
             <td class="hours-cell">
-              <input type="checkbox" data-emp="${emp.name}" onchange="updateNetSalary(this)"> Include ${hoursDisplay}
+              <input type="checkbox" class="no-print" data-emp="${emp.name}" onchange="updateNetSalary(this)" checked> 
+              <span class="print-only">Include ${hoursDisplay}</span>
             </td>
-            
-            <td class="net-salary" data-emp="${emp.name}" data-initial="${initialSalary.toFixed(2)}" data-hours="${hoursAdjustment.toFixed(2)}">₹${Math.round(netSalary)}</td>
-            <td><button class="btn btn-info btn-sm" onclick='generateSlip(${JSON.stringify(emp.name)}, "${monthKey}", ${JSON.stringify(empDetails)})'>Generate Slip</button></td>
+            <td class="net-salary" data-emp="${emp.name}" data-initial="${Math.round(initialSalary).toFixed(2)}" data-hours="${hoursAdjustment.toFixed(2)}">₹${netSalary}</td>
+            <td><button class="btn btn-info btn-sm no-print" onclick='generateSlip("${emp.name}", "${monthKey}", ${JSON.stringify(empDetails)})'">Generate Slip</button></td>
           `;
           tbody.appendChild(row);
         }
       });
+
+      // Add summary row
+      const formatMoney = (value) => {
+        return Number.isInteger(value) ? `₹${Math.floor(value)}` : `₹${value.toFixed(2)}`;
+      };
+      const summaryRow = document.createElement('tr');
+      summaryRow.style.fontWeight = 'bold';
+      summaryRow.style.backgroundColor = '#f8f9fa'; // Match header background
+      summaryRow.innerHTML = `
+        <td>-</td>
+        <td>Total</td>
+        <td>-</td>
+        <td>${formatMoney(sumBasic)}</td>
+        <td>${formatMoney(sumHra)}</td>
+        <td>${formatMoney(sumConveyance)}</td>
+        <td>${formatMoney(sumOthers)}</td>
+        <td>${formatMoney(sumTotalSalary)}</td>
+        <td>${sumPresentDays}</td>
+        <td>${sumAbsentDays}</td>
+        <td>${formatMoney(sumTotalAdvance)}</td>
+        <td>${formatMoney(sumLoanGiven)}</td>
+        <td>${formatMoney(sumLoanRepaid)}</td>
+        <td>${formatMoney(sumLoanLeft)}</td>
+        <td>-</td>
+        <td>-</td>
+        <td>${formatMoney(sumNetSalary)}</td>
+        <td>-</td>
+      `;
+      tbody.appendChild(summaryRow);
     }
 
     function updateNetSalary(checkbox) {
@@ -274,14 +356,24 @@
       const hoursAdjustment = parseFloat(tr.querySelector('.net-salary').dataset.hours);
       const netSalaryCell = tr.querySelector('.net-salary');
 
-      const netSalary = checkbox.checked ? initialSalary + hoursAdjustment : initialSalary;
-      netSalaryCell.textContent = `₹${Math.round(netSalary)}`;
+      const netSalary = checkbox.checked ? Math.round(initialSalary + hoursAdjustment) : Math.round(initialSalary);
+      netSalaryCell.textContent = `₹${netSalary}`;
+
+      // Recalculate Net Salary total for summary row
+      let sumNetSalary = 0;
+      document.querySelectorAll('.net-salary').forEach(cell => {
+        const value = parseFloat(cell.textContent.replace('₹', '')) || 0;
+        sumNetSalary += value;
+      });
+      const formatMoney = (value) => Number.isInteger(value) ? `₹${Math.floor(value)}` : `₹${value.toFixed(2)}`;
+      const summaryRow = document.getElementById('salaryTableBody').querySelector('tr:last-child');
+      summaryRow.cells[16].textContent = formatMoney(sumNetSalary); // Update Net Salary column
     }
 
     function changeShift(empName, value) {
-      shiftData[empName] = parseInt(value);
+      shiftData[empName] = parseInt(value); // Corrected to use empName as the key
       const selectedMonth = document.getElementById('reportMonth').value;
-      displaySalaries(selectedMonth);
+      displaySalaries(selectedMonth); // Recalculate with new shift
     }
 
     function generateSlip(empName, monthKey, details) {
@@ -289,33 +381,33 @@
       const checkbox = document.querySelector(`input[type="checkbox"][data-emp="${empName}"]`);
       const includeHours = checkbox && checkbox.checked;
       const hoursAdj = parseFloat(details.hoursAdjustment) || 0;
-      const updatedNetSalary = includeHours ? parseFloat(details.netSalary) + hoursAdj : parseFloat(details.netSalary);
+      const updatedNetSalary = includeHours ? Math.round(parseFloat(details.netSalary) + hoursAdj) : Math.round(parseFloat(details.netSalary));
+
+      const formatMoney = (value) => {
+        return Number.isInteger(value) ? `₹${Math.floor(value)}` : `₹${value.toFixed(2)}`;
+      };
 
       let slipHTML = `
         <h2>Salary Slip - ${empName}</h2>
         <p><strong>Month:</strong> ${formattedMonth}</p>
-        <p><strong>Shift:</strong> ${details.shiftHours} Hour Shift</p>
+        
         <table>
           <tr><th>Description</th><th>Amount (₹)</th></tr>
-          <tr><td>Basic</td><td>₹${Math.round(details.basic)}</td></tr>
-          <tr><td>HRA</td><td>₹${Math.round(details.hra)}</td></tr>
-          <tr><td>Conveyance</td><td>₹${Math.round(details.conveyance)}</td></tr>
-          <tr><td>Others</td><td>₹${Math.round(details.others)}</td></tr>
-          <tr><td><strong>Total Salary</strong></td><td><strong>₹${Math.round(details.totalSalary)}</strong></td></tr>
+          <tr><td>Basic</td><td>${formatMoney(details.basic)}</td></tr>
+          <tr><td>HRA</td><td>${formatMoney(details.hra)}</td></tr>
+          <tr><td>Conveyance</td><td>${formatMoney(details.conveyance)}</td></tr>
+          <tr><td>Others</td><td>${formatMoney(details.others)}</td></tr>
+          <tr><td><strong>Total Salary</strong></td><td><strong>${formatMoney(details.totalSalary)}</strong></td></tr>
           <tr><td>Present Days</td><td>${details.presentDays}</td></tr>
           <tr><td>Absent Days</td><td>${details.absentDays}</td></tr>
-          <tr><td>Advance Given</td><td>₹${Math.round(details.totalAdvance)}</td></tr>
-          <tr><td>Loan Given</td><td>₹${Math.round(details.totalLoanGiven)}</td></tr>
-          <tr><td>Loan Repaid</td><td>₹${Math.round(details.totalLoanRepaid)}</td></tr>
-          <tr><td>Loan Left</td><td>₹${Math.round(details.totalLoanLeft)}</td></tr>
-          <tr><td>Days Adjustment</td><td>${details.daysDisplay}</td></tr>`;
-
-      if (includeHours) {
-        slipHTML += `<tr><td>Hours Adjustment</td><td>${details.hoursDisplay}</td></tr>`;
-      }
+          <tr><td>Advance Given</td><td>${formatMoney(details.totalAdvance)}</td></tr>
+          <tr><td>Loan Given</td><td>${formatMoney(details.totalLoanGiven)}</td></tr>
+          <tr><td>Loan Repaid</td><td>${formatMoney(details.totalLoanRepaid)}</td></tr>
+          <tr><td>Loan Left</td><td>${formatMoney(details.totalLoanLeft)}</td></tr>
+          `;
 
       slipHTML += `
-          <tr style="background-color: #e8faff;"><td><strong>Net Salary</strong></td><td><strong>₹${Math.round(updatedNetSalary)}</strong></td></tr>
+          <tr style="background-color: #e8faff;"><td><strong>Net Salary</strong></td><td><strong>₹${updatedNetSalary}</strong></td></tr>
         </table>
       `;
 
@@ -329,7 +421,6 @@
       displaySalaries(this.value);
     });
 
-    
     window.onload = () => {
       const today = new Date();
       const defaultMonth = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
@@ -337,5 +428,77 @@
       displaySalaries(defaultMonth);
     };
   </script>
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-app.js";
+    import {
+      getDatabase, ref, set, get
+    } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBpWA8BuNZ8-Yh6eBtyCMsu9GkQO7v0kn4",
+      authDomain: "jalaram-7bbac.firebaseapp.com",
+      projectId: "jalaram-7bbac",
+      storageBucket: "jalaram-7bbac.firebasestorage.app",
+      messagingSenderId: "865915981684",
+      appId: "1:865915981684:web:2d7156ee1ee725773f6621"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    function showToast(message, type = "success") {
+      const toast = document.createElement("div");
+      toast.className = `custom-toast ${type}`;
+      toast.textContent = message;
+      document.body.appendChild(toast);
+
+      setTimeout(() => {
+        toast.classList.add("show");
+        setTimeout(() => {
+          toast.classList.remove("show");
+          setTimeout(() => document.body.removeChild(toast), 300);
+        }, 3000);
+      }, 100);
+    }
+
+    async function syncLocalToFirebase() {
+      const allKeys = Object.keys(localStorage);
+      for (const key of allKeys) {
+        try {
+          const value = localStorage.getItem(key);
+          const parsed = JSON.parse(value);
+          await set(ref(db, `sync/${key}`), parsed);
+        } catch {
+          await set(ref(db, `sync/${key}`), localStorage.getItem(key));
+        }
+      }
+      showToast("✔️ Local data synced to cloud!");
+    }
+
+    async function syncFirebaseToLocal() {
+      const snap = await get(ref(db, 'sync'));
+      if (snap.exists()) {
+        const data = snap.val();
+        Object.keys(data).forEach(key => {
+          localStorage.setItem(key, JSON.stringify(data[key]));
+        });
+        showToast("✔️ Cloud data loaded to local!");
+        // Trigger a re-display of salaries after loading from Firebase
+        const selectedMonth = document.getElementById('reportMonth').value;
+        displaySalaries(selectedMonth);
+      } else {
+        showToast("⚠️ No cloud data found", "error");
+      }
+    }
+
+    window.syncLocalToFirebase = syncLocalToFirebase;
+    window.syncFirebaseToLocal = syncFirebaseToLocal;
+
+    // Automatically sync from cloud when the page loads
+    document.addEventListener('DOMContentLoaded', () => {
+      syncFirebaseToLocal(); // Call this when the report page loads
+    });
+  </script>
 </body>
+
 </html>

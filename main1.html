@@ -25,7 +25,7 @@
       <div class="collapse navbar-collapse" id="navbarNav">
         <ul class="navbar-nav ms-auto">
           <li class="nav-item">
-            <a class="nav-link active" href="main.html">Attendance</a>
+            <a class="nav-link active" href="main1.html">Attendance</a>
           </li>
           <li class="nav-item">
             <a class="nav-link" href="employees.html">Employees</a>
@@ -136,26 +136,57 @@
     }
 
     async function syncLocalToFirebase() {
-      // Disable the sync button to prevent multiple clicks
-      document.getElementById('syncButton').disabled = true; // Added this line
+  const syncButton = document.getElementById('syncButton');
+  syncButton.disabled = true;
 
-      const allKeys = Object.keys(localStorage);
-      for (const key of allKeys) {
-        try {
-          const value = localStorage.getItem(key);
-          const parsed = JSON.parse(value);
-          await set(ref(db, `sync/${key}`), parsed);
-        } catch {
-          await set(ref(db, `sync/${key}`), localStorage.getItem(key));
-        }
+  // Create and show overlay
+  const overlay = document.createElement('div');
+  overlay.id = 'uploadOverlay';
+  overlay.style.position = 'fixed';
+  overlay.style.top = '0';
+  overlay.style.left = '0';
+  overlay.style.width = '100vw';
+  overlay.style.height = '100vh';
+  overlay.style.backgroundColor = 'rgba(0, 0, 0, 0.6)';
+  overlay.style.zIndex = '9999';
+  overlay.style.display = 'flex';
+  overlay.style.flexDirection = 'column';
+  overlay.style.justifyContent = 'center';
+  overlay.style.alignItems = 'center';
+  overlay.innerHTML = `
+    <div style="color: white; font-size: 24px; font-weight: bold;">Uploading data...</div>
+    <div class="spinner-border text-light mt-3" role="status">
+      <span class="visually-hidden">Loading...</span>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+
+  try {
+    const allKeys = Object.keys(localStorage);
+    for (const key of allKeys) {
+      try {
+        const value = localStorage.getItem(key);
+        const parsed = JSON.parse(value);
+        await set(ref(db, `sync/${key}`), parsed);
+      } catch {
+        await set(ref(db, `sync/${key}`), localStorage.getItem(key));
       }
-      // Show the "Attendance Updated" message after a 3-second delay
-      setTimeout(() => {
-        showToast("✔️ Attendance Updated!");
-        // Re-enable the sync button after the message is shown
-        document.getElementById('syncButton').disabled = false; // Added this line
-      }, 3000);
     }
+  } catch (err) {
+    console.error("Sync error:", err);
+    
+  }
+
+  // Always remove overlay after 5 seconds
+  setTimeout(() => {
+    if (document.body.contains(overlay)) {
+      document.body.removeChild(overlay);
+    }
+    showToast("✔️ Attendance Updated!");
+    syncButton.disabled = false;
+  }, 3000);
+}
+
 
     async function syncFirebaseToLocal() {
       const snap = await get(ref(db, 'sync'));

@@ -162,7 +162,7 @@ body {
 .attendance-grid td:first-child {
   width: 150px; /* Adjust as needed, but this will give employee name column enough space */
   min-width: 150px; /* Ensure it doesn't shrink below this */
-  max-width: 150px; /* Ensure it doesn't expand beyond this */
+  max-width: 300px; /* Ensure it doesn't expand beyond this */
   white-space: nowrap; /* Prevent name from wrapping */
   overflow: hidden; /* Hide overflow content */
   text-overflow: ellipsis; /* Add ellipsis for overflowed text */
@@ -174,4 +174,24 @@ body {
   min-width: 100px;
   max-width: 100px;
   /* Add any other button styling here if needed, e.g., padding, font-size */
+}
+.custom-toast {
+  position: fixed;
+  bottom: 30px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: #198754;
+  color: white;
+  padding: 12px 20px;
+  border-radius: 8px;
+  opacity: 0;
+  transition: opacity 0.3s ease-in-out;
+  z-index: 99999;
+}
+
+.custom-toast.show {
+  opacity: 1;
+}
+.custom-toast.error {
+  background-color: #dc3545;
 }
