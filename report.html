@@ -16,7 +16,6 @@
 
     .table {
       font-size: 0.85em;
-      /* Reduce font size for compactness */
       width: 100%;
       margin-bottom: 0;
     }
@@ -25,33 +24,25 @@
     td {
       text-align: center;
       padding: 4px;
-      /* Reduce padding */
       white-space: nowrap;
-      /* Prevent text wrapping */
       overflow: hidden;
       text-overflow: ellipsis;
-      /* Handle overflow with ellipsis */
     }
 
     th {
       background-color: #f8f9fa;
-      /* Light background for headers */
       font-weight: bold;
     }
 
     td {
       vertical-align: middle;
-      /* Center content vertically */
     }
 
     select.shift-select {
       width: 60px;
-      /* Reduce dropdown width */
       font-size: 0.85em;
-      /* Match table font size */
       padding: 2px;
       height: 24px;
-      /* Compact height */
     }
 
     .hours-cell {
@@ -64,7 +55,6 @@
 
     .btn-sm {
       padding: 2px 6px;
-      /* Compact button size */
       font-size: 0.75em;
     }
 
@@ -87,7 +77,47 @@
         padding: 2px;
       }
     }
+    @media print {
+  .table {
+    font-size: 0.65em; /* reduce font size */
+  }
+
+  th, td {
+    padding: 2px !important; /* tighter cells */
+    white-space: nowrap;
+  }
+
+  select.shift-select {
+    display: none; /* hide shift selector in print */
+  }
+
+  .hours-cell input {
+    display: none; /* hide checkboxes in print */
+  }
+
+  .print-only {
+    display: inline !important;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+}
+@media print {
+  body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+  }
+
+  .table-container {
+    width: 100% !important;
+    padding: 0 !important;
+  }
+}
+
   </style>
+  
 </head>
 
 <body>
@@ -126,7 +156,6 @@
     </div>
   </nav>
 
-
   <div style="width: 90%;" class="table-container">
     <h1>Employee Salaries</h1>
 
@@ -135,10 +164,10 @@
       <input type="month" id="reportMonth" class="form-control" style="font-size: 0.85em; padding: 4px;" />
     </div>
 
-    <button onclick="syncLocalToFirebase()" class="btn btn-success btn-sm no-print">Final Save</button>
+    <button onclick="saveShiftsToFirebase()" class="btn btn-warning btn-sm no-print">Save Shifts</button>
     <button onclick="window.print()" class="btn btn-primary btn-sm no-print ms-2">Print</button>
 
-    <table class="table table-bordered">
+    <table style="width: 75%;" class="table table-bordered">
       <thead>
         <tr>
           <th>S. No.</th>
@@ -153,12 +182,12 @@
           <th>Abs Days</th>
           <th>Adv Given (₹)</th>
           <th>Loan Given (₹)</th>
-          <th>Loan Repd (₹)</th>
-          <th>Loan Left (₹)</th>
+          <th  >Loan Repd (₹)</th>
+           <th > Loan Left (₹)</th>
           <th>Day Adj</th>
           <th>Hour Adj</th>
           <th>Net Sal (₹)</th>
-          <th>Action</th>
+          <th class="no-print">Action</th>
         </tr>
       </thead>
       <tbody id="salaryTableBody"></tbody>
@@ -173,8 +202,7 @@
     const extraHours = JSON.parse(localStorage.getItem('extraHours')) || {};
     const lateHours = JSON.parse(localStorage.getItem('lateHours')) || {};
     const hoursHistory = JSON.parse(localStorage.getItem('hoursHistory')) || [];
-
-    const shiftData = {}; // stores each employee's selected shift
+    let shiftData = {};
 
     function displaySalaries(monthKey) {
       const tbody = document.getElementById('salaryTableBody');
@@ -185,14 +213,13 @@
       const month = parseInt(monthKey.substring(5, 7)) - 1;
       const daysInMonth = new Date(year, month + 1, 0).getDate();
 
-      // Initialize sums for numeric columns
       let sumBasic = 0, sumHra = 0, sumConveyance = 0, sumOthers = 0, sumTotalSalary = 0;
       let sumPresentDays = 0, sumAbsentDays = 0, sumTotalAdvance = 0;
       let sumLoanGiven = 0, sumLoanRepaid = 0, sumLoanLeft = 0, sumNetSalary = 0;
 
       employees.forEach(emp => {
         if (emp && emp.name) {
-          const shiftHours = shiftData[emp.name] || 12; // Use the specific employee's shift or default to 12
+          const shiftHours = shiftData[emp.name] || emp.shiftHours || 12;
 
           const basic = parseFloat(emp.basic) || 0;
           const hra = parseFloat(emp.hra) || 0;
@@ -229,36 +256,43 @@
             if (l.remaining) totalLoanLeft += l.remaining;
           });
 
-          // Calculate net hours from hoursHistory for the month
           const netHours = hoursHistory
             .filter(record => record.employee === emp.name && record.date.startsWith(`${monthKey}`))
             .reduce((sum, record) => sum + (record.type === 'late' ? -record.hours : record.hours), 0);
 
-          // Adjust fullDays and remainingHours correctly for both positive and negative netHours
           let fullDays = 0, remainingHours = 0;
-
           if (netHours >= 0) {
             fullDays = Math.floor(netHours / shiftHours);
             remainingHours = netHours % shiftHours;
           } else {
-            fullDays = Math.ceil(netHours / shiftHours); // Properly round up towards zero
+            fullDays = Math.ceil(netHours / shiftHours);
             remainingHours = netHours - (fullDays * shiftHours);
           }
 
-          // Format day/hour strings
+          // Constraint: If presentDays equals daysInMonth, don't add positive fullDays
+          let adjustedFullDays = fullDays;
+          if (presentDays >= daysInMonth && fullDays > 0) {
+            adjustedFullDays = 0;
+          }
+
+          // Adjust present and absent days based on adjustedFullDays
+          if (adjustedFullDays > 0) {
+            presentDays += adjustedFullDays;
+          } else if (adjustedFullDays < 0) {
+            absentDays += Math.abs(adjustedFullDays);
+          }
+
           const daysDisplay = fullDays === 0 ? '0d' : `${fullDays > 0 ? '+' : ''}${fullDays}d`;
           const hoursDisplay = remainingHours === 0 ? '0h' : `${remainingHours > 0 ? '+' : ''}${remainingHours.toFixed(1)}h`;
 
-
           const perDaySalary = totalSalary / daysInMonth;
           const absenceDeduction = perDaySalary * absentDays;
-          const daysAdjustmentAmount = fullDays * perDaySalary;
+          const daysAdjustmentAmount = adjustedFullDays * perDaySalary;
           const hourlyRate = perDaySalary / shiftHours;
           const initialSalary = totalSalary - absenceDeduction - totalAdvance + daysAdjustmentAmount;
           const hoursAdjustment = remainingHours * hourlyRate;
           const netSalary = Math.round(initialSalary + (hoursAdjustment || 0));
 
-          // Update sums
           sumBasic += basic;
           sumHra += hra;
           sumConveyance += conveyance;
@@ -272,7 +306,6 @@
           sumLoanLeft += totalLoanLeft;
           sumNetSalary += netSalary;
 
-          // Format monetary values to remove .00 when whole number
           const formatMoney = (value) => {
             return Number.isInteger(value) ? `₹${Math.floor(value)}` : `₹${value.toFixed(2)}`;
           };
@@ -313,19 +346,18 @@
               <span class="print-only">Include ${hoursDisplay}</span>
             </td>
             <td class="net-salary" data-emp="${emp.name}" data-initial="${Math.round(initialSalary).toFixed(2)}" data-hours="${hoursAdjustment.toFixed(2)}">₹${netSalary}</td>
-            <td><button class="btn btn-info btn-sm no-print" onclick='generateSlip("${emp.name}", "${monthKey}", ${JSON.stringify(empDetails)})'">Generate Slip</button></td>
+            <td class="no-print"><button class="btn btn-info btn-sm" onclick='generateSlip("${emp.name}", "${monthKey}", ${JSON.stringify(empDetails)})'">Generate Slip</button></td>
           `;
           tbody.appendChild(row);
         }
       });
 
-      // Add summary row
       const formatMoney = (value) => {
         return Number.isInteger(value) ? `₹${Math.floor(value)}` : `₹${value.toFixed(2)}`;
       };
       const summaryRow = document.createElement('tr');
       summaryRow.style.fontWeight = 'bold';
-      summaryRow.style.backgroundColor = '#f8f9fa'; // Match header background
+      summaryRow.style.backgroundColor = '#f8f9fa';
       summaryRow.innerHTML = `
         <td>-</td>
         <td>Total</td>
@@ -344,7 +376,7 @@
         <td>-</td>
         <td>-</td>
         <td>${formatMoney(sumNetSalary)}</td>
-        <td>-</td>
+        <td class="no-print">-</td>
       `;
       tbody.appendChild(summaryRow);
     }
@@ -359,7 +391,6 @@
       const netSalary = checkbox.checked ? Math.round(initialSalary + hoursAdjustment) : Math.round(initialSalary);
       netSalaryCell.textContent = `₹${netSalary}`;
 
-      // Recalculate Net Salary total for summary row
       let sumNetSalary = 0;
       document.querySelectorAll('.net-salary').forEach(cell => {
         const value = parseFloat(cell.textContent.replace('₹', '')) || 0;
@@ -367,13 +398,21 @@
       });
       const formatMoney = (value) => Number.isInteger(value) ? `₹${Math.floor(value)}` : `₹${value.toFixed(2)}`;
       const summaryRow = document.getElementById('salaryTableBody').querySelector('tr:last-child');
-      summaryRow.cells[16].textContent = formatMoney(sumNetSalary); // Update Net Salary column
+      summaryRow.cells[16].textContent = formatMoney(sumNetSalary);
     }
 
-    function changeShift(empName, value) {
-      shiftData[empName] = parseInt(value); // Corrected to use empName as the key
+    async function changeShift(empName, value) {
+      shiftData[empName] = parseInt(value);
       const selectedMonth = document.getElementById('reportMonth').value;
-      displaySalaries(selectedMonth); // Recalculate with new shift
+      
+      try {
+        await set(ref(db, 'sync/shiftData'), shiftData);
+        showToast("✔️ Shift updated and saved to cloud!");
+      } catch (error) {
+        showToast("⚠️ Error saving shift to cloud", "error");
+      }
+      
+      displaySalaries(selectedMonth);
     }
 
     function generateSlip(empName, monthKey, details) {
@@ -381,7 +420,7 @@
       const checkbox = document.querySelector(`input[type="checkbox"][data-emp="${empName}"]`);
       const includeHours = checkbox && checkbox.checked;
       const hoursAdj = parseFloat(details.hoursAdjustment) || 0;
-      const updatedNetSalary = includeHours ? Math.round(parseFloat(details.netSalary) + hoursAdj) : Math.round(parseFloat(details.netSalary));
+      const updatedNetSalary = includeHours ? Math.round(parseFloat(details.netSalary)) : Math.round(parseFloat(details.netSalary) - hoursAdj);
 
       const formatMoney = (value) => {
         return Number.isInteger(value) ? `₹${Math.floor(value)}` : `₹${value.toFixed(2)}`;
@@ -405,6 +444,12 @@
           <tr><td>Loan Repaid</td><td>${formatMoney(details.totalLoanRepaid)}</td></tr>
           <tr><td>Loan Left</td><td>${formatMoney(details.totalLoanLeft)}</td></tr>
           `;
+
+      if (includeHours && details.hoursAdjustment !== 0) {
+        slipHTML += `
+          <tr><td>Hours Adjustment (${details.hoursDisplay})</td><td>${formatMoney(details.hoursAdjustment)}</td></tr>
+        `;
+      }
 
       slipHTML += `
           <tr style="background-color: #e8faff;"><td><strong>Net Salary</strong></td><td><strong>₹${updatedNetSalary}</strong></td></tr>
@@ -461,6 +506,15 @@
       }, 100);
     }
 
+    async function saveShiftsToFirebase() {
+      try {
+        await set(ref(db, 'sync/shiftData'), shiftData);
+        showToast("✔️ Shifts saved to cloud!");
+      } catch (error) {
+        showToast("⚠️ Error saving shifts to cloud", "error");
+      }
+    }
+
     async function syncLocalToFirebase() {
       const allKeys = Object.keys(localStorage);
       for (const key of allKeys) {
@@ -472,6 +526,7 @@
           await set(ref(db, `sync/${key}`), localStorage.getItem(key));
         }
       }
+      await set(ref(db, 'sync/shiftData'), shiftData);
       showToast("✔️ Local data synced to cloud!");
     }
 
@@ -480,10 +535,13 @@
       if (snap.exists()) {
         const data = snap.val();
         Object.keys(data).forEach(key => {
-          localStorage.setItem(key, JSON.stringify(data[key]));
+          if (key === 'shiftData') {
+            shiftData = data[key] || {};
+          } else {
+            localStorage.setItem(key, JSON.stringify(data[key]));
+          }
         });
         showToast("✔️ Cloud data loaded to local!");
-        // Trigger a re-display of salaries after loading from Firebase
         const selectedMonth = document.getElementById('reportMonth').value;
         displaySalaries(selectedMonth);
       } else {
@@ -491,12 +549,12 @@
       }
     }
 
+    window.saveShiftsToFirebase = saveShiftsToFirebase;
     window.syncLocalToFirebase = syncLocalToFirebase;
     window.syncFirebaseToLocal = syncFirebaseToLocal;
 
-    // Automatically sync from cloud when the page loads
     document.addEventListener('DOMContentLoaded', () => {
-      syncFirebaseToLocal(); // Call this when the report page loads
+      syncFirebaseToLocal();
     });
   </script>
 </body>

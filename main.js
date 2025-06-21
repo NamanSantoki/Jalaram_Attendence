@@ -1,4 +1,3 @@
-
 function logout() {
   localStorage.removeItem('isLoggedIn');
   window.location.href = 'index.html';
@@ -99,9 +98,10 @@ function loadAttendanceGrid() {
     attendanceBody.appendChild(row);
   });
 
-  // Populate hours summary
+  // Populate hours summary, sorted by date in ascending order
   hoursHistory
     .filter(record => record.date.startsWith(`${year}-${month.toString().padStart(2, '0')}`))
+    .sort((a, b) => new Date(a.date) - new Date(b.date)) // Sort by date ascending
     .forEach(record => {
       const row = document.createElement('tr');
       row.innerHTML = `

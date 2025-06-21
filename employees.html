@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,7 +9,20 @@
   <script src="util.js"></script>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <style>
+    .employee-table tbody tr {
+      cursor: move;
+    }
+    .employee-table tbody tr.dragging {
+      opacity: 0.5;
+      background-color: #f0f0f0;
+    }
+    .employee-table tbody tr:hover {
+      background-color: #f8f9fa;
+    }
+  </style>
 </head>
+
 <body>
   <nav class="navbar navbar-expand-lg navbar-light bg-light">
     <div class="container-fluid">
@@ -34,7 +48,6 @@
           <li class="nav-item">
             <a class="nav-link" href="Advance.html">Advance</a>
           </li>
-         
           <li class="nav-item">
             <a class="nav-link" href="settings.html">Settings</a>
           </li>
@@ -52,10 +65,17 @@
       <h2>Add Employee</h2>
       <div class="input-group">
         <input style="width: 200px;" type="text" id="employeeName" placeholder="Employee Name" class="form-control">
-        <input style="width: 200px;" type="number" id="basic" placeholder="Basic Salary (₹)" class="form-control salary-input">
+        <input style="width: 200px;" type="number" id="basic" placeholder="Basic Salary (₹)"
+          class="form-control salary-input">
         <input style="width: 200px;" type="number" id="hra" placeholder="HRA (₹)" class="form-control salary-input">
-        <input style="width: 200px;" type="number" id="conveyance" placeholder="Conveyance (₹)" class="form-control salary-input">
-        <input style="width: 200px;" type="number" id="others" placeholder="Others (₹)" class="form-control salary-input">
+        <input style="width: 200px;" type="number" id="conveyance" placeholder="Conveyance (₹)"
+          class="form-control salary-input">
+        <input style="width: 200px;" type="number" id="others" placeholder="Others (₹)"
+          class="form-control salary-input">
+        <select style="width: 100px;" id="shiftHours" class="form-select">
+          <option value="8">8h</option>
+          <option value="12" selected>12h</option>
+        </select>
         <button style="border-radius: 10px;" onclick="addEmployee()" class="btn btn-primary">Add</button>
         <button style="border-radius: 10px;" onclick="syncLocalToFirebase()" class="btn btn-success">Save</button>
       </div>
@@ -73,6 +93,7 @@
             <th>Conveyance (₹)</th>
             <th>Others (₹)</th>
             <th>Total Salary (₹)</th>
+            <th>Shift</th>
             <th>Action</th>
           </tr>
         </thead>
@@ -80,208 +101,257 @@
       </table>
     </div>
   </div>
-  
+
   <script>
-  function updateTotalSalary() {
-    const basic = parseFloat(document.getElementById('basic').value) || 0;
-    const hra = parseFloat(document.getElementById('hra').value) || 0;
-    const conveyance = parseFloat(document.getElementById('conveyance').value) || 0;
-    const others = parseFloat(document.getElementById('others').value) || 0;
-    const total = (basic + hra + conveyance + others).toFixed(2);
-    document.getElementById('totalSalaryDisplay').textContent = `₹${total}`;
-  }
-
-  function loadEmployees() {
-    const tbody = document.getElementById('employeeList').querySelector('tbody');
-    let employees = JSON.parse(localStorage.getItem('employees')) || [];
-    employees = employees.filter(emp => emp && typeof emp === 'object' && emp.name && !isNaN(emp.basic) && !isNaN(emp.hra) && !isNaN(emp.conveyance) && !isNaN(emp.others) && !isNaN(emp.totalSalary));
-    localStorage.setItem('employees', JSON.stringify(employees));
-    tbody.innerHTML = '';
-
-    if (employees.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="7" class="no-data">No employees added yet.</td></tr>';
-      return;
+    function updateTotalSalary() {
+      const basic = parseFloat(document.getElementById('basic').value) || 0;
+      const hra = parseFloat(document.getElementById('hra').value) || 0;
+      const conveyance = parseFloat(document.getElementById('conveyance').value) || 0;
+      const others = parseFloat(document.getElementById('others').value) || 0;
+      const total = (basic + hra + conveyance + others).toFixed(2);
+      document.getElementById('totalSalaryDisplay').textContent = `₹${total}`;
     }
 
-    employees.forEach((emp, index) => {
-      const tr = document.createElement('tr');
-      tr.className = index % 2 === 0 ? 'even-row' : 'odd-row';
-      tr.innerHTML = `
-        <td>${emp.name}</td>
-        <td>₹${emp.basic.toFixed(2)}</td>
-        <td>₹${emp.hra.toFixed(2)}</td>
-        <td>₹${emp.conveyance.toFixed(2)}</td>
-        <td>₹${emp.others.toFixed(2)}</td>
-        <td>₹${emp.totalSalary.toFixed(2)}</td>
-        <td>
-          <button class="btn btn-sm btn-warning" onclick="editEmployee('${emp.name}')">Update</button>
-          <button class="btn btn-sm btn-danger" onclick="deleteEmployee('${emp.name}')">Delete</button>
-        </td>
-      `;
-      tbody.appendChild(tr);
-    });
-  }
+    function loadEmployees() {
+      const tbody = document.getElementById('employeeList').querySelector('tbody');
+      let employees = JSON.parse(localStorage.getItem('employees')) || [];
+      employees = employees.filter(emp => emp && typeof emp === 'object' && emp.name && !isNaN(emp.basic) && !isNaN(emp.hra) && !isNaN(emp.conveyance) && !isNaN(emp.others) && !isNaN(emp.totalSalary));
+      localStorage.setItem('employees', JSON.stringify(employees));
+      tbody.innerHTML = '';
 
-  function addEmployee() {
-    const name = document.getElementById('employeeName').value.trim();
-    const basic = parseFloat(document.getElementById('basic').value);
-    const hra = parseFloat(document.getElementById('hra').value);
-    const conveyance = parseFloat(document.getElementById('conveyance').value);
-    const others = parseFloat(document.getElementById('others').value);
-    const errorMessage = document.getElementById('errorMessage');
+      if (employees.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="8" class="no-data">No employees added yet.</td></tr>';
+        return;
+      }
 
-    if (!name || isNaN(basic) || isNaN(hra) || isNaN(conveyance) || isNaN(others) || basic < 0 || hra < 0 || conveyance < 0 || others < 0) {
-      errorMessage.textContent = 'Please enter valid name and salary components.';
-      return;
+      employees.forEach((emp, index) => {
+        const tr = document.createElement('tr');
+        tr.draggable = true;
+        tr.dataset.name = emp.name;
+        tr.className = index % 2 === 0 ? 'even-row' : 'odd-row';
+        tr.innerHTML = `
+          <td>${emp.name}</td>
+          <td>₹${emp.basic.toFixed(2)}</td>
+          <td>₹${emp.hra.toFixed(2)}</td>
+          <td>₹${emp.conveyance.toFixed(2)}</td>
+          <td>₹${emp.others.toFixed(2)}</td>
+          <td>₹${emp.totalSalary.toFixed(2)}</td>
+          <td>${emp.shiftHours || 12}h</td>
+          <td>
+            <button class="btn btn-sm btn-warning" onclick="editEmployee('${emp.name}')">Update</button>
+            <button class="btn btn-sm btn-danger" onclick="deleteEmployee('${emp.name}')">Delete</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      // Add drag-and-drop event listeners
+      const rows = tbody.querySelectorAll('tr');
+      rows.forEach(row => {
+        row.addEventListener('dragstart', handleDragStart);
+        row.addEventListener('dragover', handleDragOver);
+        row.addEventListener('drop', handleDrop);
+        row.addEventListener('dragend', handleDragEnd);
+      });
     }
 
-    let employees = JSON.parse(localStorage.getItem('employees')) || [];
-    if (employees.find(emp => emp.name === name)) {
-      errorMessage.textContent = 'Employee already exists.';
-      return;
+    function handleDragStart(e) {
+      e.target.classList.add('dragging');
+      e.dataTransfer.setData('text/plain', e.target.dataset.name);
     }
 
-    const totalSalary = basic + hra + conveyance + others;
-    employees.push({ name, basic, hra, conveyance, others, totalSalary });
-    localStorage.setItem('employees', JSON.stringify(employees));
-    document.getElementById('employeeName').value = '';
-    document.getElementById('basic').value = '';
-    document.getElementById('hra').value = '';
-    document.getElementById('conveyance').value = '';
-    document.getElementById('others').value = '';
-    document.getElementById('totalSalaryDisplay').textContent = '₹0';
-    errorMessage.textContent = '';
-    loadEmployees();
-  }
-
-  function deleteEmployee(name) {
-    if (!confirm(`Delete ${name}?`)) return;
-    let employees = JSON.parse(localStorage.getItem('employees')) || [];
-    employees = employees.filter(emp => emp.name !== name);
-    localStorage.setItem('employees', JSON.stringify(employees));
-    loadEmployees();
-  }
-
-  function editEmployee(name) {
-    let employees = JSON.parse(localStorage.getItem('employees')) || [];
-    const employee = employees.find(emp => emp.name === name);
-    if (employee) {
-      document.getElementById('employeeName').value = employee.name;
-      document.getElementById('basic').value = employee.basic;
-      document.getElementById('hra').value = employee.hra;
-      document.getElementById('conveyance').value = employee.conveyance;
-      document.getElementById('others').value = employee.others;
-      updateTotalSalary();
-      // Add a save button or modify addEmployee to handle updates
-      document.querySelector('button[onclick="addEmployee()"]').onclick = function() {
-        saveEmployee(name);
-      };
-    }
-  }
-
-  function saveEmployee(originalName) {
-    const name = document.getElementById('employeeName').value.trim();
-    const basic = parseFloat(document.getElementById('basic').value);
-    const hra = parseFloat(document.getElementById('hra').value);
-    const conveyance = parseFloat(document.getElementById('conveyance').value);
-    const others = parseFloat(document.getElementById('others').value);
-    const errorMessage = document.getElementById('errorMessage');
-
-    if (!name || isNaN(basic) || isNaN(hra) || isNaN(conveyance) || isNaN(others) || basic < 0 || hra < 0 || conveyance < 0 || others < 0) {
-      errorMessage.textContent = 'Please enter valid name and salary components.';
-      return;
+    function handleDragOver(e) {
+      e.preventDefault();
     }
 
-    let employees = JSON.parse(localStorage.getItem('employees')) || [];
-    const index = employees.findIndex(emp => emp.name === originalName);
-    if (index !== -1) {
+    function handleDrop(e) {
+      e.preventDefault();
+      const draggedName = e.dataTransfer.getData('text/plain');
+      const targetName = e.target.closest('tr').dataset.name;
+      if (draggedName === targetName) return;
+
+      let employees = JSON.parse(localStorage.getItem('employees')) || [];
+      const draggedIndex = employees.findIndex(emp => emp.name === draggedName);
+      const targetIndex = employees.findIndex(emp => emp.name === targetName);
+
+      // Reorder employees array
+      const [draggedEmployee] = employees.splice(draggedIndex, 1);
+      employees.splice(targetIndex, 0, draggedEmployee);
+
+      localStorage.setItem('employees', JSON.stringify(employees));
+      loadEmployees();
+      syncLocalToFirebase();
+    }
+
+    function handleDragEnd(e) {
+      e.target.classList.remove('dragging');
+    }
+
+    function addEmployee() {
+      const name = document.getElementById('employeeName').value.trim();
+      const basic = parseFloat(document.getElementById('basic').value);
+      const hra = parseFloat(document.getElementById('hra').value);
+      const conveyance = parseFloat(document.getElementById('conveyance').value);
+      const others = parseFloat(document.getElementById('others').value);
+      const shiftHours = parseInt(document.getElementById('shiftHours').value);
+      const errorMessage = document.getElementById('errorMessage');
+
+      if (!name || isNaN(basic) || isNaN(hra) || isNaN(conveyance) || isNaN(others) || isNaN(shiftHours)) {
+        errorMessage.textContent = 'Please enter valid name, salary components, and shift.';
+        return;
+      }
+
+      let employees = JSON.parse(localStorage.getItem('employees')) || [];
+      if (employees.find(emp => emp.name === name)) {
+        errorMessage.textContent = 'Employee already exists.';
+        return;
+      }
+
       const totalSalary = basic + hra + conveyance + others;
-      employees[index] = { name, basic, hra, conveyance, others, totalSalary };
+      employees.push({ name, basic, hra, conveyance, others, totalSalary, shiftHours });
       localStorage.setItem('employees', JSON.stringify(employees));
       document.getElementById('employeeName').value = '';
       document.getElementById('basic').value = '';
       document.getElementById('hra').value = '';
       document.getElementById('conveyance').value = '';
       document.getElementById('others').value = '';
+      document.getElementById('shiftHours').value = '12';
       document.getElementById('totalSalaryDisplay').textContent = '₹0';
       errorMessage.textContent = '';
       loadEmployees();
-      // Restore the original addEmployee function
-      document.querySelector('button[onclick="addEmployee()"]').onclick = addEmployee;
+      syncLocalToFirebase();
     }
-  }
 
-  window.onload = () => {
-    loadEmployees();
-    const salaryInputs = document.querySelectorAll('.salary-input');
-    salaryInputs.forEach(input => input.addEventListener('input', updateTotalSalary));
-  };
-</script>
-  <script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-app.js";
-  import {
-    getDatabase, ref, set, get
-  } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-database.js";
+    function deleteEmployee(name) {
+      if (!confirm(`Delete ${name}?`)) return;
+      let employees = JSON.parse(localStorage.getItem('employees')) || [];
+      employees = employees.filter(emp => emp.name !== name);
+      localStorage.setItem('employees', JSON.stringify(employees));
+      loadEmployees();
+      syncLocalToFirebase();
+    }
 
-  const firebaseConfig = {
-    apiKey: "AIzaSyBpWA8BuNZ8-Yh6eBtyCMsu9GkQO7v0kn4",
-    authDomain: "jalaram-7bbac.firebaseapp.com",
-    projectId: "jalaram-7bbac",
-    storageBucket: "jalaram-7bbac.firebasestorage.app",
-    messagingSenderId: "865915981684",
-    appId: "1:865915981684:web:2d7156ee1ee725773f6621"
-  };
-
-  const app = initializeApp(firebaseConfig);
-  const db = getDatabase(app);
-
-  function showToast(message, type = "success") {
-    const toast = document.createElement("div");
-    toast.className = `custom-toast ${type}`;
-    toast.textContent = message;
-    document.body.appendChild(toast);
-
-    setTimeout(() => {
-      toast.classList.add("show");
-      setTimeout(() => {
-        toast.classList.remove("show");
-        setTimeout(() => document.body.removeChild(toast), 300);
-      }, 3000);
-    }, 100);
-  }
-
-  async function syncLocalToFirebase() {
-    const allKeys = Object.keys(localStorage);
-    for (const key of allKeys) {
-      try {
-        const value = localStorage.getItem(key);
-        const parsed = JSON.parse(value);
-        await set(ref(db, `sync/${key}`), parsed);
-      } catch {
-        await set(ref(db, `sync/${key}`), localStorage.getItem(key));
+    function editEmployee(name) {
+      let employees = JSON.parse(localStorage.getItem('employees')) || [];
+      const employee = employees.find(emp => emp.name === name);
+      if (employee) {
+        document.getElementById('employeeName').value = employee.name;
+        document.getElementById('basic').value = employee.basic;
+        document.getElementById('hra').value = employee.hra;
+        document.getElementById('conveyance').value = employee.conveyance;
+        document.getElementById('others').value = employee.others;
+        document.getElementById('shiftHours').value = employee.shiftHours || 12;
+        updateTotalSalary();
+        document.querySelector('button[onclick="addEmployee()"]').onclick = function () {
+          saveEmployee(name);
+        };
       }
     }
-    showToast("✔️ Local data synced to cloud!");
-  }
 
-  async function syncFirebaseToLocal() {
-    const snap = await get(ref(db, 'sync'));
-    if (snap.exists()) {
-      const data = snap.val();
-      Object.keys(data).forEach(key => {
-        localStorage.setItem(key, JSON.stringify(data[key]));
-      });
-      showToast("✔️ Cloud data loaded to local!");
-      // Optional:
-      // location.reload();
-    } else {
-      showToast("⚠️ No cloud data found", "error");
+    function saveEmployee(originalName) {
+      const name = document.getElementById('employeeName').value.trim();
+      const basic = parseFloat(document.getElementById('basic').value);
+      const hra = parseFloat(document.getElementById('hra').value);
+      const conveyance = parseFloat(document.getElementById('conveyance').value);
+      const others = parseFloat(document.getElementById('others').value);
+      const shiftHours = parseInt(document.getElementById('shiftHours').value);
+      const errorMessage = document.getElementById('errorMessage');
+
+      if (!name || isNaN(basic) || isNaN(hra) || isNaN(conveyance) || isNaN(others) || isNaN(shiftHours)) {
+        errorMessage.textContent = 'Please enter valid name, salary components, and shift.';
+        return;
+      }
+
+      let employees = JSON.parse(localStorage.getItem('employees')) || [];
+      const index = employees.findIndex(emp => emp.name === originalName);
+      if (index !== -1) {
+        const totalSalary = basic + hra + conveyance + others;
+        employees[index] = { name, basic, hra, conveyance, others, totalSalary, shiftHours };
+        localStorage.setItem('employees', JSON.stringify(employees));
+        document.getElementById('employeeName').value = '';
+        document.getElementById('basic').value = '';
+        document.getElementById('hra').value = '';
+        document.getElementById('conveyance').value = '';
+        document.getElementById('others').value = '';
+        document.getElementById('shiftHours').value = '12';
+        document.getElementById('totalSalaryDisplay').textContent = '₹0';
+        errorMessage.textContent = '';
+        loadEmployees();
+        document.querySelector('button[onclick="addEmployee()"]').onclick = addEmployee;
+        syncLocalToFirebase();
+      }
     }
-  }
 
-  window.syncLocalToFirebase = syncLocalToFirebase;
-  window.syncFirebaseToLocal = syncFirebaseToLocal;
-</script>
+    window.onload = () => {
+      loadEmployees();
+      const salaryInputs = document.querySelectorAll('.salary-input');
+      salaryInputs.forEach(input => input.addEventListener('input', updateTotalSalary));
+    };
+  </script>
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-app.js";
+    import {
+      getDatabase, ref, set, get
+    } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-database.js";
 
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'951a86f0f9d8a6ef',t:'MTc1MDI0Njk4Ni4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+    const firebaseConfig = {
+      apiKey: "AIzaSyBpWA8BuNZ8-Yh6eBtyCMsu9GkQO7v0kn4",
+      authDomain: "jalaram-7bbac.firebaseapp.com",
+      projectId: "jalaram-7bbac",
+      storageBucket: "jalaram-7bbac.firebasestorage.app",
+      messagingSenderId: "865915981684",
+      appId: "1:865915981684:web:2d7156ee1ee725773f6621"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    function showToast(message, type = "success") {
+      const toast = document.createElement("div");
+      toast.className = `custom-toast ${type}`;
+      toast.textContent = message;
+      document.body.appendChild(toast);
+
+      setTimeout(() => {
+        toast.classList.add("show");
+        setTimeout(() => {
+          toast.classList.remove("show");
+          setTimeout(() => document.body.removeChild(toast), 300);
+        }, 3000);
+      }, 100);
+    }
+
+    async function syncLocalToFirebase() {
+      const allKeys = Object.keys(localStorage);
+      for (const key of allKeys) {
+        try {
+          const value = localStorage.getItem(key);
+          const parsed = JSON.parse(value);
+          await set(ref(db, `sync/${key}`), parsed);
+        } catch {
+          await set(ref(db, `sync/${key}`), localStorage.getItem(key));
+        }
+      }
+      showToast("✔️ Local data synced to cloud!");
+    }
+
+    async function syncFirebaseToLocal() {
+      const snap = await get(ref(db, 'sync'));
+      if (snap.exists()) {
+        const data = snap.val();
+        Object.keys(data).forEach(key => {
+          localStorage.setItem(key, JSON.stringify(data[key]));
+        });
+        showToast("✔️ Cloud data loaded to local!");
+        loadEmployees();
+      } else {
+        showToast("⚠️ No cloud data found", "error");
+      }
+    }
+
+    window.syncLocalToFirebase = syncLocalToFirebase;
+    window.syncFirebaseToLocal = syncFirebaseToLocal;
+  </script>
+</body>
+
 </html>
