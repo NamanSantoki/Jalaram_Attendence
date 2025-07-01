@@ -50,6 +50,7 @@
       <h3>Advance</h3>
       <select id="advanceEmployee" class="form-control mb-2" onchange="loadAdvanceList()"></select>
       <input type="number" id="advanceAmount" placeholder="Total Advance Amount (₹)" class="form-control mb-2" />
+      <input type="date" id="advanceDate" class="form-control mb-2" />
       <button class="btn btn-primary btn-custom mb-2" onclick="addAdvance()">Add Advance</button>
       <h5 class="mt-3">Advance History</h5>
       <ul id="advanceList" class="list-group mt-2"></ul>
@@ -71,16 +72,24 @@
       });
     }
 
+    function setDefaultDate() {
+      const dateInput = document.getElementById("advanceDate");
+      const today = new Date().toISOString().split("T")[0];
+      dateInput.value = today;
+    }
+
     function addAdvance() {
       const name = document.getElementById("advanceEmployee").value;
       const amount = parseFloat(document.getElementById("advanceAmount").value);
-      if (!name || isNaN(amount) || amount <= 0) return alert("Enter a valid advance amount and employee.");
+      const date = document.getElementById("advanceDate").value;
+      if (!name || isNaN(amount) || amount <= 0 || !date) return alert("Enter a valid advance amount, employee, and date.");
 
       advances[name] = advances[name] || [];
-      advances[name].push({ amount, remaining: amount, date: new Date().toISOString() });
+      advances[name].push({ amount, remaining: amount, date });
 
       localStorage.setItem("advances", JSON.stringify(advances));
       document.getElementById("advanceAmount").value = "";
+      setDefaultDate();
       loadAdvanceList();
     }
 
@@ -104,9 +113,7 @@
 
       const summary = document.createElement("li");
       summary.className = "list-group-item";
-      summary.innerHTML = `<strong>${name}'s Summary:</strong>
-
-       Total Advance Taken: ₹${totalTaken}`;
+      summary.innerHTML = `<strong>${name}'s Summary:</strong> Total Advance Taken: ₹${totalTaken}`;
       list.appendChild(summary);
 
       allAdvances.forEach((entry, i) => {
@@ -120,6 +127,7 @@
 
     window.onload = () => {
       populateEmployeeDropdown();
+      setDefaultDate();
       loadAdvanceList();
     };
   </script>
@@ -200,6 +208,7 @@
     window.onload = () => {
       syncFromCloud().then(() => {
         populateEmployeeDropdown();
+        setDefaultDate();
         loadAdvanceList();
       });
     };
