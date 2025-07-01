@@ -81,7 +81,7 @@ function loadAttendanceGrid() {
     const hoursDisplay = `${formatHoursDisplay(totalExtraHours)} / ${formatHoursDisplay(-totalLateHours)}`;
 
     const row = document.createElement('tr');
-    row.innerHTML = `<td class="employee-name">${emp.name} (${hoursDisplay})</td>`;
+    row.innerHTML = `<td class="employee-name">${emp.name}</td>`;
 
     dates.forEach(date => {
       const isPresent = attendance[date]?.[emp.name] !== undefined ? attendance[date][emp.name] : true;
