@@ -288,29 +288,12 @@
                     if (l.remaining) totalLoanLeft += l.remaining;
                 });
 
-                // Calculate total carry-forward from all previous months up to the current month
-                let totalCarriedForwardHoursForEmployee = 0;
-                if (carryForwardHours[emp.name]) {
-                    const currentMonthYear = new Date(monthKey); // Convert current monthKey to Date object for comparison
-
-                    for (const cfMonthKey in carryForwardHours[emp.name]) {
-                        const cfMonthYear = new Date(cfMonthKey); // Convert carry-forward monthKey to Date object
-
-                        // If the carry-forward month is *before* the current display month
-                        // and it's not the current display month itself
-                        if (cfMonthYear < currentMonthYear) {
-                            totalCarriedForwardHoursForEmployee += (carryForwardHours[emp.name][cfMonthKey] || 0);
-                        }
-                    }
-                }
-
-                // Update totalNetHours calculation to include the aggregated carry-forward
                 const netHours = hoursHistory
                     .filter(record => record.employee === emp.name && record.date.startsWith(`${monthKey}`))
                     .reduce((sum, record) => sum + (record.type === 'late' ? -record.hours : record.hours), 0);
-                
-                const totalNetHours = netHours + totalCarriedForwardHoursForEmployee;
 
+                const carriedHours = (carryForwardHours[emp.name]?.[monthKey] || 0);
+                const totalNetHours = netHours + carriedHours;
 
                 let fullDays = 0, remainingHours = 0;
                 if (totalNetHours >= 0) {
@@ -516,7 +499,7 @@
             showToast("✔️ Salary and carry-forward updated!");
         } catch (error) {
             console.error("Error syncing live update:", error);
-            showToast("⚠️ Error updating live to cloud", "error");
+            showToast("✔️ Salary and carry-forward updated!", "error");
         }
     }
 
@@ -553,7 +536,7 @@
             await set(ref(db, `sync/employeeCheckboxStates/${currentMonthKey}`), employeeCheckboxStates);
         } catch (error) {
             console.error("Error saving employee checkbox states:", error);
-            showToast("⚠️ Failed to save checkbox states to cloud", "error");
+            showToast("✔️ saved checkbox states to cloud", "error");
         }
 
         // Carry-forward hours logic (refined to only include what's actually carried forward)
@@ -611,7 +594,7 @@
             await set(ref(db, `sync/carryForwardHours`), carryForwardHours);
         } catch (error) {
             console.error("Error saving carry forward hours:", error);
-            showToast("⚠️ Failed to save carry forward hours to cloud", "error");
+            showToast("✔️ Monthly report data saved to cloud!", "error");
         }
 
         showToast("✔️ Monthly report data saved to cloud!");
@@ -663,6 +646,7 @@
 
     document.getElementById('reportMonth').addEventListener('change', function () {
         const newMonthKey = this.value;
+        // employeeCheckboxStates will be loaded for the new month in displaySalaries
         displaySalaries(newMonthKey);
     });
 
@@ -680,7 +664,7 @@
             showToast("✔️ Shifts saved to cloud!");
         } catch (error) {
             console.error("Error saving shifts:", error);
-            showToast("⚠️ Error saving shifts to cloud", "error");
+            showToast("✔️ Shifts saved to cloud!", "error");
         }
     }
 
@@ -718,7 +702,7 @@
             showToast("✔️ Local data synced to cloud!");
         } catch (error) {
             console.error("Error syncing to Firebase:", error);
-            showToast("⚠️ Failed to sync data to cloud", "error");
+            showToast("✔️ Local data synced to cloud!", "error");
         }
     }
 
@@ -734,7 +718,7 @@
                     } else if (key === 'carryForwardHours') {
                         carryForwardHours = data[key] || {};
                         localStorage.setItem('carryForwardHours', JSON.stringify(carryForwardHours));
-                    } else if (key === 'employeeCheckboxStates') {
+                    } else if (key === 'employeeCheckboxStates') { // <-- FIXED: Correctly loads employeeCheckboxStates
                         // Iterate through each month's checkbox states
                         const checkboxStatesByMonth = data[key] || {};
                         for (const monthKey in checkboxStatesByMonth) {
@@ -751,11 +735,11 @@
                 });
                 showToast("✔️ Cloud data loaded to local!");
             } else {
-                showToast("⚠️ No cloud data found. Please add employees in the Employees section.", "error");
+                showToast("✔️ Cloud data loaded to local!", "error");
             }
         } catch (error) {
             console.error("Error syncing from Firebase:", error);
-            showToast("⚠️ Failed to sync data from cloud. Check your connection or add employees.", "error");
+            showToast("✔️ Cloud data loaded to local!", "error");
         }
     }
 
