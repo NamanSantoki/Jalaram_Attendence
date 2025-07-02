@@ -150,14 +150,12 @@
             <label for="reportMonth" class="form-label">Select Month</label>
             <input style="width: 15%;" type="month" id="reportMonth" class="form-control" style="font-size: 0.85em; padding: 4px;" />
         </div>
-        <br>
 
         <button onclick="saveShiftsToFirebase()" class="btn btn-warning btn-sm no-print">Save Shifts</button>
         <button onclick="saveMonthlyReport()" class="btn btn-success btn-sm no-print ms-2">Save Monthly Report</button>
         <button onclick="window.print()" class="btn btn-primary btn-sm no-print ms-2">Print</button>
-        <br><br>
 
-        <table style="align-items: center;" class="table table-bordered" id="salaryTable">
+        <table  class="table table-bordered" id="salaryTable">
             <thead>
                 <tr>
                     <th>S. No.</th>
@@ -185,615 +183,624 @@
     </div>
 
     <script>
-    // Global variables
-    let employees = JSON.parse(localStorage.getItem('employees')) || [];
-    const attendance = JSON.parse(localStorage.getItem('attendance')) || {};
-    const advances = JSON.parse(localStorage.getItem('advances')) || {};
-    const loans = JSON.parse(localStorage.getItem('loans')) || {};
-    const extraHours = JSON.parse(localStorage.getItem('extraHours')) || {};
-    const lateHours = JSON.parse(localStorage.getItem('lateHours')) || {};
-    const hoursHistory = JSON.parse(localStorage.getItem('hoursHistory')) || [];
-    let shiftData = {};
-    let carryForwardHours = JSON.parse(localStorage.getItem('carryForwardHours')) || {};
-    let employeeCheckboxStates = {}; // This will now be loaded dynamically per month
+        // Global variables
+        let employees = JSON.parse(localStorage.getItem('employees')) || [];
+        const attendance = JSON.parse(localStorage.getItem('attendance')) || {};
+        const advances = JSON.parse(localStorage.getItem('advances')) || {};
+        const loans = JSON.parse(localStorage.getItem('loans')) || {};
+        const extraHours = JSON.parse(localStorage.getItem('extraHours')) || {};
+        const lateHours = JSON.parse(localStorage.getItem('lateHours')) || {};
+        const hoursHistory = JSON.parse(localStorage.getItem('hoursHistory')) || [];
+        let shiftData = {};
+        let carryForwardHours = JSON.parse(localStorage.getItem('carryForwardHours')) || {};
+        let employeeCheckboxStates = {}; // Holds states for the currently selected month
 
-    function getCurrentMonthKey() {
-        return document.getElementById('reportMonth').value;
-    }
-
-    function getNextMonthKey(monthKey) {
-        const year = parseInt(monthKey.substring(0, 4));
-        const month = parseInt(monthKey.substring(5, 7));
-        const nextMonth = month === 12 ? 1 : month + 1;
-        const nextYear = month === 12 ? year + 1 : year;
-        return `${nextYear}-${String(nextMonth).padStart(2, '0')}`;
-    }
-
-    const formatMoney = (value) => {
-        return Number.isInteger(value) ? `₹${Math.floor(value)}` : `₹${value.toFixed(2)}`;
-    };
-
-    function displaySalaries(monthKey) {
-        const tbody = document.getElementById('salaryTableBody');
-        tbody.innerHTML = '';
-        if (!monthKey) return;
-
-        if (employees.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="18">No employees found. Please add employees in the Employees section.</td></tr>';
-            return;
+        function getCurrentMonthKey() {
+            const monthInput = document.getElementById('reportMonth').value;
+            if (!monthInput) {
+                const today = new Date();
+                return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+            }
+            return monthInput;
         }
 
-        const year = parseInt(monthKey.substring(0, 4));
-        const month = parseInt(monthKey.substring(5, 7)) - 1;
-        const daysInMonth = new Date(year, month + 1, 0).getDate();
-        const currentMonthStartDate = new Date(year, month, 1);
-        const currentMonthEndDate = new Date(year, month + 1, 0);
-
-        // Load checkbox states for the current month from local storage
-        try {
-            const savedStates = localStorage.getItem('employeeCheckboxStates_' + monthKey);
-            employeeCheckboxStates = savedStates ? JSON.parse(savedStates) : {};
-        } catch (e) {
-            console.error("Error loading saved checkbox states:", e);
-            employeeCheckboxStates = {}; // Fallback to empty if parsing fails
+        function getNextMonthKey(monthKey) {
+            const year = parseInt(monthKey.substring(0, 4));
+            const month = parseInt(monthKey.substring(5, 7));
+            const nextMonth = month === 12 ? 1 : month + 1;
+            const nextYear = month === 12 ? year + 1 : year;
+            return `${nextYear}-${String(nextMonth).padStart(2, '0')}`;
         }
 
-        let sumBasic = 0, sumHra = 0, sumConveyance = 0, sumOthers = 0, sumTotalSalary = 0;
-        let sumPresentDays = 0, sumAbsentDays = 0, sumTotalAdvance = 0;
-        let sumLoanGiven = 0, sumLoanRepaid = 0, sumLoanLeft = 0, sumNetSalary = 0;
+        function getPreviousMonthKey(monthKey) {
+            const year = parseInt(monthKey.substring(0, 4));
+            const month = parseInt(monthKey.substring(5, 7));
+            const prevMonth = month === 1 ? 12 : month - 1;
+            const prevYear = month === 1 ? year - 1 : year;
+            return `${prevYear}-${String(prevMonth).padStart(2, '0')}`;
+        }
 
-        employees.forEach(emp => {
-            if (emp && emp.name) {
-                const shiftHours = shiftData[emp.name] || emp.shiftHours || 12;
-                const basic = parseFloat(emp.basic) || 0;
-                const hra = parseFloat(emp.hra) || 0;
-                const conveyance = parseFloat(emp.conveyance) || 0;
-                const others = parseFloat(emp.others) || 0;
-                const totalSalary = parseFloat(emp.totalSalary) || (basic + hra + conveyance + others);
-
-                let presentDays = 0, absentDays = 0;
-                const attendedDays = new Set();
-                for (let day = 1; day <= daysInMonth; day++) {
-                    const date = `${monthKey}-${String(day).padStart(2, '0')}`;
-                    if (attendance[date]?.[emp.name] !== undefined) {
-                        attendedDays.add(day);
-                        attendance[date][emp.name] === true ? presentDays++ : absentDays++;
-                    }
+        function getAllMonthKeysFromMay2025(targetMonthKey) {
+            const months = [];
+            const [targetYear, targetMonth] = targetMonthKey.split('-').map(Number);
+            const startYear = 2025;
+            const startMonth = 5; // May 2025
+            for (let year = startYear; year <= targetYear; year++) {
+                const beginMonth = year === startYear ? startMonth : 1;
+                const endMonth = year === targetYear ? targetMonth : 12;
+                for (let month = beginMonth; month <= endMonth; month++) {
+                    const monthKey = `${year}-${String(month).padStart(2, '0')}`;
+                    months.push(monthKey);
                 }
-                if (attendedDays.size === 0) {
-                    absentDays = daysInMonth;
-                } else {
-                    const totalRecordedDays = presentDays + absentDays;
-                    if (totalRecordedDays !== daysInMonth) {
-                        presentDays = daysInMonth - absentDays;
-                    }
+            }
+            return months;
+        }
+
+        const formatMoney = (value) => {
+            return Number.isInteger(value) ? `₹${Math.floor(value)}` : `₹${value.toFixed(2)}`;
+        };
+
+        function initializeCheckboxStates(monthKey) {
+            let states = JSON.parse(localStorage.getItem('employeeCheckboxStates_' + monthKey)) || {};
+            employees.forEach(emp => {
+                if (emp && emp.name && states[emp.name] === undefined) {
+                    states[emp.name] = false; // Default to unticked
                 }
+            });
+            localStorage.setItem('employeeCheckboxStates_' + monthKey, JSON.stringify(states));
+            return states;
+        }
 
-                let totalAdvanceToDeduct = 0;
-                const advanceList = advances[emp.name] || [];
-                advanceList.forEach(adv => {
-                    if (adv.date) {
-                        const advanceDate = new Date(adv.date);
-                        if (advanceDate >= currentMonthStartDate && advanceDate <= currentMonthEndDate) {
-                            totalAdvanceToDeduct += (adv.amount || 0);
-                        }
-                    }
-                });
+        function computeCarryForwardHours(employee, targetMonthKey, shiftHours) {
+            console.log(`Computing carry-forward for ${employee} up to ${targetMonthKey}`);
+            const monthKeys = getAllMonthKeysFromMay2025(targetMonthKey);
+            let totalCarriedHours = 0;
 
-                const loanList = loans[emp.name] || [];
-                let totalLoanGiven = 0, totalLoanRepaid = 0, totalLoanLeft = 0;
-                loanList.forEach(l => {
-                    if (l.amount) totalLoanGiven += l.amount;
-                    if (l.amount && l.remaining !== undefined) totalLoanRepaid += (l.amount - l.remaining);
-                    if (l.remaining) totalLoanLeft += l.remaining;
-                });
+            carryForwardHours[employee] = carryForwardHours[employee] || {};
 
+            // Process all months including the target month
+            for (const monthKey of monthKeys) {
+                const savedStates = initializeCheckboxStates(monthKey);
+                const isCheckboxTicked = savedStates[employee] === true;
+
+                // Calculate net hours for this month
                 const netHours = hoursHistory
-                    .filter(record => record.employee === emp.name && record.date.startsWith(`${monthKey}`))
+                    .filter(record => record.employee === employee && record.date.startsWith(monthKey))
                     .reduce((sum, record) => sum + (record.type === 'late' ? -record.hours : record.hours), 0);
 
-                const carriedHours = (carryForwardHours[emp.name]?.[monthKey] || 0);
-                const totalNetHours = netHours + carriedHours;
+                console.log(`Month ${monthKey}: Net Hours = ${netHours}, Checkbox Ticked = ${isCheckboxTicked}`);
 
-                let fullDays = 0, remainingHours = 0;
-                if (totalNetHours >= 0) {
-                    fullDays = Math.floor(totalNetHours / shiftHours);
-                    remainingHours = totalNetHours % shiftHours;
-                } else {
-                    fullDays = Math.ceil(totalNetHours / shiftHours);
-                    remainingHours = totalNetHours - (fullDays * shiftHours);
+                // Add hours if checkbox is unticked
+                if (!isCheckboxTicked) {
+                    totalCarriedHours += netHours;
                 }
 
-                let adjustedFullDays = fullDays;
-                if (presentDays >= daysInMonth && fullDays > 0) {
-                    adjustedFullDays = 0;
-                }
-
-                const perDaySalary = totalSalary / daysInMonth;
-                const absenceDeduction = perDaySalary * absentDays;
-                const daysAdjustment = adjustedFullDays === 0 ? 0 : (adjustedFullDays > 0 ? 1 : -1);
-                const daysAdjustmentAmount = daysAdjustment * perDaySalary;
-                const hourlyRate = perDaySalary / shiftHours;
-                const hoursAdjustment = remainingHours * hourlyRate;
-
-                const initialSalary = totalSalary - absenceDeduction - totalAdvanceToDeduct + daysAdjustmentAmount;
-                // Determine checkbox state from loaded employeeCheckboxStates
-                const isCheckboxTicked = employeeCheckboxStates[emp.name] === true; // Load state
-                const netSalary = isCheckboxTicked ? Math.round(initialSalary + hoursAdjustment) : Math.round(initialSalary);
-
-                sumBasic += basic;
-                sumHra += hra;
-                sumConveyance += conveyance;
-                sumOthers += others;
-                sumTotalSalary += totalSalary;
-                sumPresentDays += presentDays;
-                sumAbsentDays += absentDays;
-                sumTotalAdvance += totalAdvanceToDeduct;
-                sumLoanGiven += totalLoanGiven;
-                sumLoanRepaid += totalLoanRepaid;
-                sumLoanLeft += totalLoanLeft;
-                sumNetSalary += netSalary;
-
-                const empDetails = {
-                    basic, hra, conveyance, others, totalSalary,
-                    presentDays, absentDays, totalAdvance: totalAdvanceToDeduct,
-                    totalLoanGiven, totalLoanRepaid, totalLoanLeft,
-                    daysDisplay: fullDays === 0 ? '0d' : `${fullDays > 0 ? '+' : ''}${fullDays}d`,
-                    hoursDisplay: remainingHours === 0 ? '0h' : `${remainingHours > 0 ? '+' : ''}${remainingHours.toFixed(1)}h`,
-                    initialSalary, hoursAdjustment, shiftHours, remainingHours
-                };
-
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td>${tbody.children.length + 1}</td>
-                    <td class="emp-name">${emp.name}</td>
-                    <td>
-                        <select class="shift-select no-print" onchange="changeShift('${emp.name}', this.value)">
-                            <option value="8" ${shiftHours === 8 ? 'selected' : ''}>8h</option>
-                            <option value="12" ${shiftHours === 12 ? 'selected' : ''}>12h</option>
-                        </select>
-                        <span class="print-only">${shiftHours}h</span>
-                    </td>
-                    <td>${formatMoney(basic)}</td>
-                    <td>${formatMoney(hra)}</td>
-                    <td>${formatMoney(conveyance)}</td>
-                    <td>${formatMoney(others)}</td>
-                    <td>${formatMoney(totalSalary)}</td>
-                    <td>${presentDays}</td>
-                    <td>${absentDays}</td>
-                    <td>${formatMoney(totalAdvanceToDeduct)}</td>
-                    <td>${formatMoney(totalLoanGiven)}</td>
-                    <td>${formatMoney(totalLoanRepaid)}</td>
-                    <td>${formatMoney(totalLoanLeft)}</td>
-                    <td>${empDetails.daysDisplay}</td>
-                    <td class="hours-cell" data-remaining-hours="${remainingHours.toFixed(1)}">
-                        <input type="checkbox" class="no-print hours-adj-checkbox" data-emp="${emp.name}" ${isCheckboxTicked ? 'checked' : ''} onchange="updateNetSalaryDisplayAndSaveState(this)">
-                        <span class="print-only remaining-hours">${empDetails.hoursDisplay}</span>
-                    </td>
-                    <td class="net-salary" data-emp="${emp.name}" data-initial-salary="${Math.round(initialSalary)}" data-hours-adjustment="${Math.round(hoursAdjustment)}">₹${netSalary}</td>
-                    <td class="no-print"><button class="btn btn-info btn-sm" onclick='generateSlip("${emp.name}", "${monthKey}", ${JSON.stringify(empDetails)})'>Generate Slip</button></td>
-                `;
-                tbody.appendChild(row);
-            }
-        });
-
-        // Enforce carry-forward based on current UI state (after rendering)
-        const nextMonthKey = getNextMonthKey(monthKey);
-        employees.forEach(emp => {
-            const empName = emp.name;
-            const row = Array.from(tbody.children).find(r => r.querySelector('.emp-name')?.textContent.trim() === empName);
-            if (!row) return;
-            const checkbox = row.querySelector('.hours-adj-checkbox');
-            const remainingHours = parseFloat(row.querySelector('.hours-cell')?.getAttribute('data-remaining-hours')) || 0;
-
-            carryForwardHours[empName] = carryForwardHours[empName] || {};
-
-            if (checkbox && !checkbox.checked && remainingHours !== 0) {
-                carryForwardHours[empName][nextMonthKey] = remainingHours;
-            } else {
-                // If checkbox is ticked or remaining hours are zero, remove carry-forward for next month
-                delete carryForwardHours[empName][nextMonthKey];
-                // Also remove carry-forward for current month if it exists and is now being used
-                delete carryForwardHours[empName][monthKey];
-                if (Object.keys(carryForwardHours[empName]).length === 0) {
-                    delete carryForwardHours[empName];
+                // Update carryForwardHours for the current month
+                if (monthKey === targetMonthKey) {
+                    if (!isCheckboxTicked && netHours !== 0) {
+                        carryForwardHours[employee][monthKey] = netHours;
+                    } else {
+                        delete carryForwardHours[employee][monthKey];
+                    }
                 }
             }
-        });
-        localStorage.setItem('carryForwardHours', JSON.stringify(carryForwardHours));
-        // No immediate Firebase update here to prevent excessive writes on display.
-        // It will be handled by saveMonthlyReport or updateNetSalaryDisplayAndSaveState.
 
-        // Summary row
-        sumNetSalary = 0; // Recalculate based on rendered values
-        document.querySelectorAll('#salaryTableBody .net-salary').forEach(cell => {
-            const value = parseFloat(cell.textContent.replace('₹', '')) || 0;
-            sumNetSalary += value;
-        });
-
-        const summaryRow = document.createElement('tr');
-        summaryRow.style.fontWeight = 'bold';
-        summaryRow.style.backgroundColor = '#f8f9fa';
-        summaryRow.innerHTML = `
-            <td>-</td>
-            <td>Total</td>
-            <td>-</td>
-            <td>${formatMoney(sumBasic)}</td>
-            <td>${formatMoney(sumHra)}</td>
-            <td>${formatMoney(sumConveyance)}</td>
-            <td>${formatMoney(sumOthers)}</td>
-            <td>${formatMoney(sumTotalSalary)}</td>
-            <td>${sumPresentDays}</td>
-            <td>${sumAbsentDays}</td>
-            <td>${formatMoney(sumTotalAdvance)}</td>
-            <td>${formatMoney(sumLoanGiven)}</td>
-            <td>${formatMoney(sumLoanRepaid)}</td>
-            <td>${formatMoney(sumLoanLeft)}</td>
-            <td>-</td>
-            <td>-</td>
-            <td id="totalNetSalary">${formatMoney(sumNetSalary)}</td>
-            <td class="no-print">-</td>
-        `;
-        tbody.appendChild(summaryRow);
-    }
-
-    function updateNetSalaryDisplayAndSaveState(checkboxElement) {
-        const currentMonthKey = getCurrentMonthKey();
-        const nextMonthKey = getNextMonthKey(currentMonthKey);
-        const empName = checkboxElement.dataset.emp;
-        const row = checkboxElement.closest('tr');
-        const remainingHours = parseFloat(row.querySelector('.hours-cell').getAttribute('data-remaining-hours')) || 0;
-
-        // Update checkbox state based on user interaction
-        employeeCheckboxStates[empName] = checkboxElement.checked;
-        localStorage.setItem('employeeCheckboxStates_' + currentMonthKey, JSON.stringify(employeeCheckboxStates));
-
-        // Recalculate net salaries for all employees in the table
-        let totalNetSalarySum = 0;
-        document.querySelectorAll('#salaryTableBody tr:not(:last-child)').forEach(row => {
-            const cb = row.querySelector('.hours-adj-checkbox');
-            const netCell = row.querySelector('.net-salary');
-            if (cb && netCell) {
-                const initial = parseFloat(netCell.getAttribute('data-initial-salary'));
-                const hoursAdj = parseFloat(netCell.getAttribute('data-hours-adjustment'));
-                const updated = cb.checked ? initial + hoursAdj : initial;
-                netCell.textContent = `₹${Math.round(updated)}`;
-                totalNetSalarySum += Math.round(updated);
-            }
-        });
-        document.getElementById('totalNetSalary').textContent = formatMoney(totalNetSalarySum);
-
-        // Carry-forward logic
-        carryForwardHours[empName] = carryForwardHours[empName] || {};
-
-        if (!checkboxElement.checked && remainingHours !== 0) {
-            carryForwardHours[empName][nextMonthKey] = remainingHours;
-        } else {
-            delete carryForwardHours[empName][nextMonthKey];
-            delete carryForwardHours[empName][currentMonthKey]; // Remove if it was carried forward and now used
-            if (Object.keys(carryForwardHours[empName]).length === 0) {
-                delete carryForwardHours[empName];
-            }
-        }
-
-        // Save carryForwardHours to localStorage
-        localStorage.setItem('carryForwardHours', JSON.stringify(carryForwardHours));
-
-        // Save to Firebase
-        try {
-            // Update specific employee's carryForwardHours for next month
-            if (carryForwardHours[empName]?.[nextMonthKey] !== undefined) {
-                set(ref(db, `sync/carryForwardHours/${empName}/${nextMonthKey}`), carryForwardHours[empName][nextMonthKey]);
-            } else {
-                // If it's no longer carried forward for next month, remove it from Firebase
-                set(ref(db, `sync/carryForwardHours/${empName}/${nextMonthKey}`), null);
+            // Clean up empty employee entries
+            if (Object.keys(carryForwardHours[employee]).length === 0) {
+                delete carryForwardHours[employee];
             }
 
-            // Remove current month's carry-forward if it was used/deleted
-            if (carryForwardHours[empName]?.[currentMonthKey] === undefined) {
-                set(ref(db, `sync/carryForwardHours/${empName}/${currentMonthKey}`), null);
+            localStorage.setItem('carryForwardHours', JSON.stringify(carryForwardHours));
+            console.log(`Total carried hours for ${employee} in ${targetMonthKey}: ${totalCarriedHours}`);
+            return totalCarriedHours;
+        }
+
+        function displaySalaries(monthKey) {
+            const tbody = document.getElementById('salaryTableBody');
+            tbody.innerHTML = '';
+            if (!monthKey) {
+                showToast("⚠️ No month selected", "error");
+                return;
             }
 
-            // Update employeeCheckboxStates for the current month
-            set(ref(db, `sync/employeeCheckboxStates/${currentMonthKey}`), employeeCheckboxStates);
-            showToast("✔️ Salary and carry-forward updated!");
-        } catch (error) {
-            console.error("Error syncing live update:", error);
-            showToast("✔️ Salary and carry-forward updated!", "error");
+            console.log(`Displaying salaries for month: ${monthKey}`);
+
+            if (employees.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="18">No employees found. Please add employees in the Employees section.</td></tr>';
+                return;
+            }
+
+            employeeCheckboxStates = initializeCheckboxStates(monthKey);
+
+            const year = parseInt(monthKey.substring(0, 4));
+            const month = parseInt(monthKey.substring(5, 7)) - 1;
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            const currentMonthStartDate = new Date(year, month, 1);
+            const currentMonthEndDate = new Date(year, month + 1, 0);
+
+            let sumBasic = 0, sumHra = 0, sumConveyance = 0, sumOthers = 0, sumTotalSalary = 0;
+            let sumPresentDays = 0, sumAbsentDays = 0, sumTotalAdvance = 0;
+            let sumLoanGiven = 0, sumLoanRepaid = 0, sumLoanLeft = 0, sumNetSalary = 0;
+
+            employees.forEach(emp => {
+                if (emp && emp.name) {
+                    const shiftHours = shiftData[emp.name] || emp.shiftHours || 12;
+                    const basic = parseFloat(emp.basic) || 0;
+                    const hra = parseFloat(emp.hra) || 0;
+                    const conveyance = parseFloat(emp.conveyance) || 0;
+                    const others = parseFloat(emp.others) || 0;
+                    const totalSalary = parseFloat(emp.totalSalary) || (basic + hra + conveyance + others);
+
+                    let presentDays = 0, absentDays = 0;
+                    const attendedDays = new Set();
+                    for (let day = 1; day <= daysInMonth; day++) {
+                        const date = `${monthKey}-${String(day).padStart(2, '0')}`;
+                        if (attendance[date]?.[emp.name] !== undefined) {
+                            attendedDays.add(day);
+                            attendance[date][emp.name] === true ? presentDays++ : absentDays++;
+                        }
+                    }
+                    if (attendedDays.size === 0) {
+                        absentDays = daysInMonth;
+                    } else {
+                        const totalRecordedDays = presentDays + absentDays;
+                        if (totalRecordedDays !== daysInMonth) {
+                            presentDays = daysInMonth - absentDays;
+                        }
+                    }
+
+                    let totalAdvanceToDeduct = 0;
+                    const advanceList = advances[emp.name] || [];
+                    advanceList.forEach(adv => {
+                        if (adv.date) {
+                            const advanceDate = new Date(adv.date);
+                            if (advanceDate >= currentMonthStartDate && advanceDate <= currentMonthEndDate) {
+                                totalAdvanceToDeduct += (adv.amount || 0);
+                            }
+                        }
+                    });
+
+                    const loanList = loans[emp.name] || [];
+                    let totalLoanGiven = 0, totalLoanRepaid = 0, totalLoanLeft = 0;
+                    loanList.forEach(l => {
+                        if (l.amount) totalLoanGiven += l.amount;
+                        if (l.amount && l.remaining !== undefined) totalLoanRepaid += (l.amount - l.remaining);
+                        if (l.remaining) totalLoanLeft += l.remaining;
+                    });
+
+                    const totalNetHours = computeCarryForwardHours(emp.name, monthKey, shiftHours);
+
+                    let fullDays = 0, remainingHours = 0;
+                    if (totalNetHours >= 0) {
+                        fullDays = Math.floor(totalNetHours / shiftHours);
+                        remainingHours = totalNetHours % shiftHours;
+                    } else {
+                        fullDays = Math.ceil(totalNetHours / shiftHours);
+                        remainingHours = totalNetHours - (fullDays * shiftHours);
+                    }
+
+                    let adjustedFullDays = fullDays;
+                    if (presentDays >= daysInMonth && fullDays > 0) {
+                        adjustedFullDays = 0;
+                    }
+
+                    const perDaySalary = totalSalary / daysInMonth;
+                    const absenceDeduction = perDaySalary * absentDays;
+                    const daysAdjustment = adjustedFullDays === 0 ? 0 : (adjustedFullDays > 0 ? 1 : -1);
+                    const daysAdjustmentAmount = daysAdjustment * perDaySalary;
+                    const hourlyRate = perDaySalary / shiftHours;
+                    const hoursAdjustment = remainingHours * hourlyRate;
+
+                    const initialSalary = totalSalary - absenceDeduction - totalAdvanceToDeduct + daysAdjustmentAmount;
+                    const isCheckboxTicked = employeeCheckboxStates[emp.name];
+                    const netSalary = isCheckboxTicked ? Math.round(initialSalary + hoursAdjustment) : Math.round(initialSalary);
+
+                    sumBasic += basic;
+                    sumHra += hra;
+                    sumConveyance += conveyance;
+                    sumOthers += others;
+                    sumTotalSalary += totalSalary;
+                    sumPresentDays += presentDays;
+                    sumAbsentDays += absentDays;
+                    sumTotalAdvance += totalAdvanceToDeduct;
+                    sumLoanGiven += totalLoanGiven;
+                    sumLoanRepaid += totalLoanRepaid;
+                    sumLoanLeft += totalLoanLeft;
+                    sumNetSalary += netSalary;
+
+                    const empDetails = {
+                        basic, hra, conveyance, others, totalSalary,
+                        presentDays, absentDays, totalAdvance: totalAdvanceToDeduct,
+                        totalLoanGiven, totalLoanRepaid, totalLoanLeft,
+                        daysDisplay: fullDays === 0 ? '0d' : `${fullDays > 0 ? '+' : ''}${fullDays}d`,
+                        hoursDisplay: remainingHours === 0 ? '0h' : `${remainingHours > 0 ? '+' : ''}${remainingHours.toFixed(1)}h`,
+                        initialSalary, hoursAdjustment, shiftHours, remainingHours
+                    };
+
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${tbody.children.length + 1}</td>
+                        <td class="emp-name">${emp.name}</td>
+                        <td>
+                            <select class="shift-select no-print" onchange="changeShift('${emp.name}', this.value)">
+                                <option value="8" ${shiftHours === 8 ? 'selected' : ''}>8h</option>
+                                <option value="12" ${shiftHours === 12 ? 'selected' : ''}>12h</option>
+                            </select>
+                            <span class="print-only">${shiftHours}h</span>
+                        </td>
+                        <td>${formatMoney(basic)}</td>
+                        <td>${formatMoney(hra)}</td>
+                        <td>${formatMoney(conveyance)}</td>
+                        <td>${formatMoney(others)}</td>
+                        <td>${formatMoney(totalSalary)}</td>
+                        <td>${presentDays}</td>
+                        <td>${absentDays}</td>
+                        <td>${formatMoney(totalAdvanceToDeduct)}</td>
+                        <td>${formatMoney(totalLoanGiven)}</td>
+                        <td>${formatMoney(totalLoanRepaid)}</td>
+                        <td>${formatMoney(totalLoanLeft)}</td>
+                        <td>${empDetails.daysDisplay}</td>
+                        <td class="hours-cell" data-remaining-hours="${remainingHours.toFixed(1)}">
+                            <input type="checkbox" class="no-print hours-adj-checkbox" data-emp="${emp.name}" ${isCheckboxTicked ? 'checked' : ''} onchange="updateNetSalaryDisplayAndSaveState(this)">
+                            <span class="print-only remaining-hours">${empDetails.hoursDisplay}</span>
+                        </td>
+                        <td class="net-salary" data-emp="${emp.name}" data-initial-salary="${Math.round(initialSalary)}" data-hours-adjustment="${Math.round(hoursAdjustment)}">₹${netSalary}</td>
+                        <td class="no-print"><button class="btn btn-info btn-sm" onclick='generateSlip("${emp.name}", "${monthKey}", ${JSON.stringify(empDetails)})'>Generate Slip</button></td>
+                    `;
+                    tbody.appendChild(row);
+                }
+            });
+
+            // Summary row
+            sumNetSalary = 0;
+            document.querySelectorAll('#salaryTableBody .net-salary').forEach(cell => {
+                const value = parseFloat(cell.textContent.replace('₹', '')) || 0;
+                sumNetSalary += value;
+            });
+
+            const summaryRow = document.createElement('tr');
+            summaryRow.style.fontWeight = 'bold';
+            summaryRow.style.backgroundColor = '#f8f9fa';
+            summaryRow.innerHTML = `
+                <td>-</td>
+                <td>Total</td>
+                <td>-</td>
+                <td>${formatMoney(sumBasic)}</td>
+                <td>${formatMoney(sumHra)}</td>
+                <td>${formatMoney(sumConveyance)}</td>
+                <td>${formatMoney(sumOthers)}</td>
+                <td>${formatMoney(sumTotalSalary)}</td>
+                <td>${sumPresentDays}</td>
+                <td>${sumAbsentDays}</td>
+                <td>${formatMoney(sumTotalAdvance)}</td>
+                <td>${formatMoney(sumLoanGiven)}</td>
+                <td>${formatMoney(sumLoanRepaid)}</td>
+                <td>${formatMoney(sumLoanLeft)}</td>
+                <td>-</td>
+                <td>-</td>
+                <td id="totalNetSalary">${formatMoney(sumNetSalary)}</td>
+                <td class="no-print">-</td>
+            `;
+            tbody.appendChild(summaryRow);
+
+            // Save carryForwardHours to Firebase
+            try {
+                set(ref(db, 'sync/carryForwardHours'), carryForwardHours);
+                showToast("✔️ Carry-forward hours synced to cloud!");
+            } catch (error) {
+                console.error("Error syncing carryForwardHours:", error);
+                showToast("⚠️ Error syncing carry-forward hours", "error");
+            }
         }
-    }
 
-    async function changeShift(empName, value) {
-        shiftData[empName] = parseInt(value);
-        const selectedMonth = getCurrentMonthKey();
-        try {
-            await set(ref(db, 'sync/shiftData'), shiftData);
-            showToast("✔️ Shift updated and saved to cloud!");
-        } catch (error) {
-            console.error("Error saving shift:", error);
-            showToast("⚠️ Error saving shift to cloud", "error");
-        }
-        displaySalaries(selectedMonth);
-    }
-
-    async function saveMonthlyReport() {
-        const currentMonthKey = getCurrentMonthKey();
-        if (!currentMonthKey) {
-            showToast("⚠️ Please select a month", "error");
-            return;
-        }
-
-        // Collect current checkbox states from the UI
-        const currentUIEmployeeCheckboxStates = {};
-        document.querySelectorAll('#salaryTableBody .hours-adj-checkbox').forEach(checkbox => {
-            currentUIEmployeeCheckboxStates[checkbox.dataset.emp] = checkbox.checked;
-        });
-        employeeCheckboxStates = currentUIEmployeeCheckboxStates; // Update global state
-
-        // Save checkbox states
-        localStorage.setItem('employeeCheckboxStates_' + currentMonthKey, JSON.stringify(employeeCheckboxStates));
-        try {
-            await set(ref(db, `sync/employeeCheckboxStates/${currentMonthKey}`), employeeCheckboxStates);
-        } catch (error) {
-            console.error("Error saving employee checkbox states:", error);
-            showToast("✔️ saved checkbox states to cloud", "error");
-        }
-
-        // Carry-forward hours logic (refined to only include what's actually carried forward)
-        const nextMonthKey = getNextMonthKey(currentMonthKey);
-        const currentCarryForwardHoursSnapshot = {};
-
-        document.querySelectorAll('#salaryTableBody tr:not(:last-child)').forEach(row => {
-            const empName = row.querySelector('.emp-name').textContent.trim();
-            const checkbox = row.querySelector('.hours-adj-checkbox');
+        function updateNetSalaryDisplayAndSaveState(checkboxElement) {
+            const currentMonthKey = getCurrentMonthKey();
+            const empName = checkboxElement.dataset.emp;
+            const row = checkboxElement.closest('tr');
             const remainingHours = parseFloat(row.querySelector('.hours-cell').getAttribute('data-remaining-hours')) || 0;
 
-            // Only carry forward if checkbox is NOT checked and there are remaining hours
-            if (checkbox && !checkbox.checked && remainingHours !== 0) {
-                if (!currentCarryForwardHoursSnapshot[empName]) {
-                    currentCarryForwardHoursSnapshot[empName] = {};
-                }
-                currentCarryForwardHoursSnapshot[empName][nextMonthKey] = remainingHours;
-            }
-        });
+            // Update checkbox state
+            employeeCheckboxStates[empName] = checkboxElement.checked;
+            localStorage.setItem('employeeCheckboxStates_' + currentMonthKey, JSON.stringify(employeeCheckboxStates));
 
-        // Merge currentCarryForwardHoursSnapshot with global carryForwardHours
-        // This ensures that only relevant carry-forward entries are kept.
-        // First, clear out any carry-forwards for the next month that are no longer valid.
-        for (const empName in carryForwardHours) {
-            if (carryForwardHours[empName][nextMonthKey] !== undefined &&
-                (!currentCarryForwardHoursSnapshot[empName] || currentCarryForwardHoursSnapshot[empName][nextMonthKey] === undefined)) {
-                delete carryForwardHours[empName][nextMonthKey];
-                // Also clean up if the employee has no other carry-forward entries
-                if (Object.keys(carryForwardHours[empName]).length === 0) {
-                    delete carryForwardHours[empName];
+            // Update net salaries
+            let totalNetSalarySum = 0;
+            document.querySelectorAll('#salaryTableBody tr:not(:last-child)').forEach(row => {
+                const cb = row.querySelector('.hours-adj-checkbox');
+                const netCell = row.querySelector('.net-salary');
+                if (cb && netCell) {
+                    const initial = parseFloat(netCell.getAttribute('data-initial-salary'));
+                    const hoursAdj = parseFloat(netCell.getAttribute('data-hours-adjustment'));
+                    const updated = cb.checked ? initial + hoursAdj : initial;
+                    netCell.textContent = `₹${Math.round(updated)}`;
+                    totalNetSalarySum += Math.round(updated);
                 }
-            }
-            // Ensure current month's carry-forward is also cleared if it was used/deleted
-            if (carryForwardHours[empName] && carryForwardHours[empName][currentMonthKey] !== undefined &&
-                (currentUIEmployeeCheckboxStates[empName] === true || remainingHours === 0)) { // Check if checkbox is ticked or hours are zero for current month
+            });
+            document.getElementById('totalNetSalary').textContent = formatMoney(totalNetSalarySum);
+
+            // Update carryForwardHours for the current month
+            carryForwardHours[empName] = carryForwardHours[empName] || {};
+            const currentNetHours = hoursHistory
+                .filter(record => record.employee === empName && record.date.startsWith(currentMonthKey))
+                .reduce((sum, record) => sum + (record.type === 'late' ? -record.hours : record.hours), 0);
+            if (!checkboxElement.checked && currentNetHours !== 0) {
+                carryForwardHours[empName][currentMonthKey] = currentNetHours;
+            } else {
                 delete carryForwardHours[empName][currentMonthKey];
                 if (Object.keys(carryForwardHours[empName]).length === 0) {
                     delete carryForwardHours[empName];
                 }
             }
-        }
-        // Then, add or update entries from the current UI snapshot
-        for (const empName in currentCarryForwardHoursSnapshot) {
-            if (!carryForwardHours[empName]) {
-                carryForwardHours[empName] = {};
+
+            localStorage.setItem('carryForwardHours', JSON.stringify(carryForwardHours));
+
+            try {
+                set(ref(db, 'sync/carryForwardHours'), carryForwardHours);
+                set(ref(db, `sync/employeeCheckboxStates/${currentMonthKey}`), employeeCheckboxStates);
+                showToast("✔️ Salary and carry-forward updated!");
+            } catch (error) {
+                console.error("Error syncing live update:", error);
+                showToast("⚠️ Error updating salary and carry-forward", "error");
             }
-            carryForwardHours[empName][nextMonthKey] = currentCarryForwardHoursSnapshot[empName][nextMonthKey];
         }
 
-
-        // Save carryForwardHours to localStorage and Firebase
-        localStorage.setItem('carryForwardHours', JSON.stringify(carryForwardHours));
-        try {
-            // Push the entire carryForwardHours object to Firebase to ensure consistency
-            await set(ref(db, `sync/carryForwardHours`), carryForwardHours);
-        } catch (error) {
-            console.error("Error saving carry forward hours:", error);
-            showToast("✔️ Monthly report data saved to cloud!", "error");
+        async function changeShift(empName, value) {
+            shiftData[empName] = parseInt(value);
+            const selectedMonth = getCurrentMonthKey();
+            try {
+                await set(ref(db, 'sync/shiftData'), shiftData);
+                showToast("✔️ Shift updated and saved to cloud!");
+            } catch (error) {
+                console.error("Error saving shift:", error);
+                showToast("⚠️ Error saving shift to cloud", "error");
+            }
+            displaySalaries(selectedMonth);
         }
 
-        showToast("✔️ Monthly report data saved to cloud!");
-    }
+        async function saveMonthlyReport() {
+            const currentMonthKey = getCurrentMonthKey();
+            if (!currentMonthKey) {
+                showToast("⚠️ Please select a month", "error");
+                return;
+            }
 
-    function generateSlip(empName, monthKey, details) {
-        const formattedMonth = new Date(monthKey + '-01').toLocaleString('default', { month: 'long', year: 'numeric' });
-        // Retrieve the current checkbox state for this employee and month
-        const currentMonthCheckboxStates = JSON.parse(localStorage.getItem('employeeCheckboxStates_' + monthKey)) || {};
-        const isCheckboxTicked = currentMonthCheckboxStates[empName] === true;
+            // Update checkbox states from UI
+            const currentUIEmployeeCheckboxStates = {};
+            document.querySelectorAll('#salaryTableBody .hours-adj-checkbox').forEach(checkbox => {
+                currentUIEmployeeCheckboxStates[checkbox.dataset.emp] = checkbox.checked;
+            });
+            employeeCheckboxStates = currentUIEmployeeCheckboxStates;
+            localStorage.setItem('employeeCheckboxStates_' + currentMonthKey, JSON.stringify(employeeCheckboxStates));
 
-        const finalNetSalary = isCheckboxTicked ? Math.round(details.initialSalary + details.hoursAdjustment) : Math.round(details.initialSalary);
+            try {
+                await set(ref(db, `sync/employeeCheckboxStates/${currentMonthKey}`), employeeCheckboxStates);
+            } catch (error) {
+                console.error("Error saving checkbox states:", error);
+                showToast("⚠️ Error saving checkbox states", "error");
+            }
 
-        let slipHTML = `
-            <h2>Salary Slip - ${empName}</h2>
-            <p><strong>Month:</strong> ${formattedMonth}</p>
-            <table>
-                <tr><th>Description</th><th>Amount (₹)</th></tr>
-                <tr><td>Basic</td><td>${formatMoney(details.basic)}</td></tr>
-                <tr><td>HRA</td><td>${formatMoney(details.hra)}</td></tr>
-                <tr><td>Conveyance</td><td>${formatMoney(details.conveyance)}</td></tr>
-                <tr><td>Others</td><td>${formatMoney(details.others)}</td></tr>
-                <tr><td><strong>Total Salary</strong></td><td><strong>${formatMoney(details.totalSalary)}</strong></td></tr>
-                <tr><td>Present Days</td><td>${details.presentDays}</td></tr>
-                <tr><td>Absent Days</td><td>${details.absentDays}</td></tr>
-                <tr><td>Advance Given</td><td>${formatMoney(details.totalAdvance)}</td></tr>
-                <tr><td>Loan Given</td><td>${formatMoney(details.totalLoanGiven)}</td></tr>
-                <tr><td>Loan Repaid</td><td>${formatMoney(details.totalLoanRepaid)}</td></tr>
-                <tr><td>Loan Left</td><td>${formatMoney(details.totalLoanLeft)}</td></tr>
-                <tr><td>Day Adjustment</td><td>${details.daysDisplay}</td></tr>
-        `;
+            // Update carryForwardHours based on UI state
+            employees.forEach(emp => {
+                const empName = emp.name;
+                const row = Array.from(document.querySelectorAll('#salaryTableBody tr:not(:last-child)'))
+                    .find(r => r.querySelector('.emp-name')?.textContent.trim() === empName);
+                if (!row) return;
 
-        if (isCheckboxTicked && details.hoursAdjustment !== 0) {
-            slipHTML += `
-                <tr><td>Hours Adjustment (${details.hoursDisplay})</td><td>${formatMoney(details.hoursAdjustment)}</td></tr>
+                const checkbox = row.querySelector('.hours-adj-checkbox');
+                const currentNetHours = hoursHistory
+                    .filter(record => record.employee === empName && record.date.startsWith(currentMonthKey))
+                    .reduce((sum, record) => sum + (record.type === 'late' ? -record.hours : record.hours), 0);
+
+                carryForwardHours[empName] = carryForwardHours[empName] || {};
+                if (checkbox && !checkbox.checked && currentNetHours !== 0) {
+                    carryForwardHours[empName][currentMonthKey] = currentNetHours;
+                } else {
+                    delete carryForwardHours[empName][currentMonthKey];
+                    if (Object.keys(carryForwardHours[empName]).length === 0) {
+                        delete carryForwardHours[empName];
+                    }
+                }
+            });
+
+            localStorage.setItem('carryForwardHours', JSON.stringify(carryForwardHours));
+
+            try {
+                await set(ref(db, 'sync/carryForwardHours'), carryForwardHours);
+                showToast("✔️ Monthly report and carry-forward hours saved to cloud!");
+            } catch (error) {
+                console.error("Error saving monthly report:", error);
+                showToast("⚠️ Error saving monthly report", "error");
+            }
+        }
+
+        function generateSlip(empName, monthKey, details) {
+            const formattedMonth = new Date(monthKey + '-01').toLocaleString('default', { month: 'long', year: 'numeric' });
+            const isCheckboxTicked = employeeCheckboxStates[empName] === true;
+            const finalNetSalary = isCheckboxTicked ? Math.round(details.initialSalary + details.hoursAdjustment) : Math.round(details.initialSalary);
+
+            let slipHTML = `
+                <h2>Salary Slip - ${empName}</h2>
+                <p><strong>Month:</strong> ${formattedMonth}</p>
+                <table>
+                    <tr><th>Description</th><th>Amount (₹)</th></tr>
+                    <tr><td>Basic</td><td>${formatMoney(details.basic)}</td></tr>
+                    <tr><td>HRA</td><td>${formatMoney(details.hra)}</td></tr>
+                    <tr><td>Conveyance</td><td>${formatMoney(details.conveyance)}</td></tr>
+                    <tr><td>Others</td><td>${formatMoney(details.others)}</td></tr>
+                    <tr><td><strong>Total Salary</strong></td><td><strong>${formatMoney(details.totalSalary)}</strong></td></tr>
+                    <tr><td>Present Days</td><td>${details.presentDays}</td></tr>
+                    <tr><td>Absent Days</td><td>${details.absentDays}</td></tr>
+                    <tr><td>Advance Given</td><td>${formatMoney(details.totalAdvance)}</td></tr>
+                    <tr><td>Loan Given</td><td>${formatMoney(details.totalLoanGiven)}</td></tr>
+                    <tr><td>Loan Repaid</td><td>${formatMoney(details.totalLoanRepaid)}</td></tr>
+                    <tr><td>Loan Left</td><td>${formatMoney(details.totalLoanLeft)}</td></tr>
+                    <tr><td>Day Adjustment</td><td>${details.daysDisplay}</td></tr>
             `;
-        }
 
-        slipHTML += `
-            <tr style="background-color: #e8faff;"><td><strong>Net Salary</strong></td><td><strong>₹${finalNetSalary}</strong></td></tr>
-            </table>
-        `;
-
-        window.open(
-            `generateSalSlip.html?data=${encodeURIComponent(slipHTML)}&empName=${encodeURIComponent(empName)}&formattedMonth=${encodeURIComponent(formattedMonth)}`,
-            '_blank'
-        );
-    }
-
-    document.getElementById('reportMonth').addEventListener('change', function () {
-        const newMonthKey = this.value;
-        // employeeCheckboxStates will be loaded for the new month in displaySalaries
-        displaySalaries(newMonthKey);
-    });
-
-    window.onload = async () => {
-        await syncFirebaseToLocal();
-        const today = new Date();
-        const defaultMonth = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
-        document.getElementById('reportMonth').value = defaultMonth;
-        displaySalaries(defaultMonth);
-    };
-
-    async function saveShiftsToFirebase() {
-        try {
-            await set(ref(db, 'sync/shiftData'), shiftData);
-            showToast("✔️ Shifts saved to cloud!");
-        } catch (error) {
-            console.error("Error saving shifts:", error);
-            showToast("✔️ Shifts saved to cloud!", "error");
-        }
-    }
-
-    async function syncLocalToFirebase() {
-        try {
-            const allKeys = Object.keys(localStorage);
-            for (const key of allKeys) {
-                // Check if the key matches our known data structures or starts with 'employeeCheckboxStates_'
-                if (['employees', 'attendance', 'advances', 'loans', 'extraHours', 'lateHours', 'hoursHistory', 'shiftData', 'carryForwardHours'].includes(key) || key.startsWith('employeeCheckboxStates_')) {
-                    try {
-                        const value = localStorage.getItem(key);
-                        const parsed = JSON.parse(value);
-                        // For employeeCheckboxStates, store them under a month key in Firebase
-                        if (key.startsWith('employeeCheckboxStates_')) {
-                            const monthKey = key.substring('employeeCheckboxStates_'.length);
-                            await set(ref(db, `sync/employeeCheckboxStates/${monthKey}`), parsed);
-                        } else {
-                            await set(ref(db, `sync/${key}`), parsed);
-                        }
-                    } catch (e) {
-                        // If parsing fails (e.g., if it's not JSON), store as raw string
-                        if (key.startsWith('employeeCheckboxStates_')) {
-                            const monthKey = key.substring('employeeCheckboxStates_'.length);
-                            await set(ref(db, `sync/employeeCheckboxStates/${monthKey}`), localStorage.getItem(key));
-                        } else {
-                             await set(ref(db, `sync/${key}`), localStorage.getItem(key));
-                        }
-                    }
-                }
+            if (isCheckboxTicked && details.hoursAdjustment !== 0) {
+                slipHTML += `
+                    <tr><td>Hours Adjustment (${details.hoursDisplay})</td><td>${formatMoney(details.hoursAdjustment)}</td></tr>
+                `;
             }
-            // Explicitly sync shiftData and carryForwardHours as they are global objects
-            await set(ref(db, 'sync/shiftData'), shiftData);
-            await set(ref(db, 'sync/carryForwardHours'), carryForwardHours);
 
-            showToast("✔️ Local data synced to cloud!");
-        } catch (error) {
-            console.error("Error syncing to Firebase:", error);
-            showToast("✔️ Local data synced to cloud!", "error");
+            slipHTML += `
+                <tr style="background-color: #e8faff;"><td><strong>Net Salary</strong></td><td><strong>₹${finalNetSalary}</strong></td></tr>
+                </table>
+            `;
+
+            window.open(
+                `generateSalSlip.html?data=${encodeURIComponent(slipHTML)}&empName=${encodeURIComponent(empName)}&formattedMonth=${encodeURIComponent(formattedMonth)}`,
+                '_blank'
+            );
         }
-    }
 
-    async function syncFirebaseToLocal() {
-        try {
-            const snap = await get(ref(db, 'sync'));
-            if (snap.exists()) {
-                const data = snap.val();
-                Object.keys(data).forEach(key => {
-                    if (key === 'shiftData') {
-                        shiftData = data[key] || {};
-                        localStorage.setItem('shiftData', JSON.stringify(shiftData)); // Ensure shiftData is also saved locally
-                    } else if (key === 'carryForwardHours') {
-                        carryForwardHours = data[key] || {};
-                        localStorage.setItem('carryForwardHours', JSON.stringify(carryForwardHours));
-                    } else if (key === 'employeeCheckboxStates') { // <-- FIXED: Correctly loads employeeCheckboxStates
-                        // Iterate through each month's checkbox states
-                        const checkboxStatesByMonth = data[key] || {};
-                        for (const monthKey in checkboxStatesByMonth) {
-                            localStorage.setItem('employeeCheckboxStates_' + monthKey, JSON.stringify(checkboxStatesByMonth[monthKey]));
-                        }
-                    }
-                    else { // For other regular data like employees, attendance, etc.
+        document.getElementById('reportMonth').addEventListener('change', async function () {
+            const newMonthKey = this.value;
+            if (!newMonthKey) {
+                showToast("⚠️ Invalid month selected", "error");
+                return;
+            }
+            employeeCheckboxStates = initializeCheckboxStates(newMonthKey);
+            displaySalaries(newMonthKey);
+        });
+
+        window.onload = async () => {
+            await syncFirebaseToLocal();
+            const today = new Date();
+            const defaultMonth = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+            document.getElementById('reportMonth').value = defaultMonth;
+            employeeCheckboxStates = initializeCheckboxStates(defaultMonth);
+            displaySalaries(defaultMonth);
+        };
+
+        async function saveShiftsToFirebase() {
+            try {
+                await set(ref(db, 'sync/shiftData'), shiftData);
+                showToast("✔️ Shifts saved to cloud!");
+            } catch (error) {
+                console.error("Error saving shifts:", error);
+                showToast("⚠️ Error saving shifts to cloud", "error");
+            }
+        }
+
+        async function syncLocalToFirebase() {
+            try {
+                const allKeys = Object.keys(localStorage);
+                for (const key of allKeys) {
+                    if (['employees', 'attendance', 'advances', 'loans', 'extraHours', 'lateHours', 'hoursHistory', 'shiftData', 'carryForwardHours'].includes(key) || key.startsWith('employeeCheckboxStates_')) {
                         try {
-                            localStorage.setItem(key, JSON.stringify(data[key]));
+                            const value = JSON.parse(localStorage.getItem(key));
+                            if (key.startsWith('employeeCheckboxStates_')) {
+                                const monthKey = key.substring('employeeCheckboxStates_'.length);
+                                await set(ref(db, `sync/employeeCheckboxStates/${monthKey}`), value);
+                            } else {
+                                await set(ref(db, `sync/${key}`), value);
+                            }
                         } catch (e) {
-                            localStorage.setItem(key, data[key]);
+                            console.error(`Error parsing or syncing ${key}:`, e);
+                            showToast(`⚠️ Error syncing ${key} to cloud`, "error");
                         }
                     }
-                });
-                showToast("✔️ Cloud data loaded to local!");
-            } else {
-                showToast("✔️ Cloud data loaded to local!", "error");
-            }
-        } catch (error) {
-            console.error("Error syncing from Firebase:", error);
-            showToast("✔️ Cloud data loaded to local!", "error");
-        }
-    }
-
-    window.saveShiftsToFirebase = saveShiftsToFirebase;
-    window.saveMonthlyReport = saveMonthlyReport;
-    window.syncLocalToFirebase = syncLocalToFirebase;
-    window.syncFirebaseToLocal = syncFirebaseToLocal;
-    window.updateNetSalaryDisplayAndSaveState = updateNetSalaryDisplayAndSaveState;
-
-    // Polyfills for querySelector on contains text
-    if (!Element.prototype.matches) {
-        Element.prototype.matches = Element.prototype.msMatchesSelector || Element.prototype.webkitMatchesSelector;
-    }
-    if (!Element.prototype.closest) {
-        Element.prototype.closest = function (selector) {
-            var el = this;
-            while (el && el.nodeType === 1) {
-                if (el.matches(selector)) {
-                    return el;
                 }
-                el = el.parentNode;
+                showToast("✔️ Local data synced to cloud!");
+            } catch (error) {
+                console.error("Error syncing to Firebase:", error);
+                showToast("⚠️ Error syncing local data to cloud", "error");
             }
-            return null;
-        };
-    }
-    if (!String.prototype.contains) {
-        String.prototype.contains = function (s) {
-            return this.indexOf(s) !== -1;
-        };
-    }
-    (function (selector) {
-        if (!selector) return;
-        var oldQuerySelectorAll = Element.prototype.querySelectorAll;
-        Element.prototype.querySelectorAll = function (selector) {
-            var result = oldQuerySelectorAll.apply(this, arguments);
-            if (selector.indexOf(':contains') === -1) {
-                return result;
+        }
+
+        async function syncFirebaseToLocal() {
+            try {
+                const snap = await get(ref(db, 'sync'));
+                if (snap.exists()) {
+                    const data = snap.val();
+                    Object.keys(data).forEach(key => {
+                        if (key === 'shiftData') {
+                            shiftData = data[key] || {};
+                            localStorage.setItem('shiftData', JSON.stringify(shiftData));
+                        } else if (key === 'carryForwardHours') {
+                            carryForwardHours = data[key] || {};
+                            localStorage.setItem('carryForwardHours', JSON.stringify(carryForwardHours));
+                        } else if (key === 'employeeCheckboxStates') {
+                            const checkboxStatesByMonth = data[key] || {};
+                            for (const monthKey in checkboxStatesByMonth) {
+                                localStorage.setItem('employeeCheckboxStates_' + monthKey, JSON.stringify(checkboxStatesByMonth[monthKey]));
+                            }
+                        } else {
+                            try {
+                                localStorage.setItem(key, JSON.stringify(data[key]));
+                            } catch (e) {
+                                localStorage.setItem(key, data[key]);
+                            }
+                        }
+                    });
+                    employees = JSON.parse(localStorage.getItem('employees')) || [];
+                    // Initialize checkbox states for all months from May 2025
+                    const monthKeys = getAllMonthKeysFromMay2025(getCurrentMonthKey());
+                    monthKeys.forEach(monthKey => {
+                        initializeCheckboxStates(monthKey);
+                    });
+                    showToast("✔️ Cloud data loaded to local!");
+                } else {
+                    showToast("⚠️ No cloud data found", "error");
+                }
+            } catch (error) {
+                console.error("Error syncing from Firebase:", error);
+                showToast("⚠️ Error loading cloud data to local", "error");
             }
-            var containsText = selector.match(/:contains\(['"]([^'"]*)['"]\)/);
-            if (containsText && containsText[1]) {
-                var text = containsText[1];
-                var newSelector = selector.replace(/:contains\(['"]([^'"]*)['"]\)/g, '');
-                var filtered = [];
-                oldQuerySelectorAll.apply(this, [newSelector]).forEach(function (el) {
-                    if (el.textContent.includes(text)) {
-                        filtered.push(el);
+        }
+
+        window.saveShiftsToFirebase = saveShiftsToFirebase;
+        window.saveMonthlyReport = saveMonthlyReport;
+        window.syncLocalToFirebase = syncLocalToFirebase;
+        window.syncFirebaseToLocal = syncFirebaseToLocal;
+        window.updateNetSalaryDisplayAndSaveState = updateNetSalaryDisplayAndSaveState;
+
+        // Polyfills for querySelector on contains text
+        if (!Element.prototype.matches) {
+            Element.prototype.matches = Element.prototype.msMatchesSelector || Element.prototype.webkitMatchesSelector;
+        }
+        if (!Element.prototype.closest) {
+            Element.prototype.closest = function (selector) {
+                var el = this;
+                while (el && el.nodeType === 1) {
+                    if (el.matches(selector)) {
+                        return el;
                     }
-                });
-                return filtered;
-            }
-            return result;
-        };
-    })(Element.prototype.querySelectorAll);
-</script>
+                    el = el.parentNode;
+                }
+                return null;
+            };
+        }
+        if (!String.prototype.contains) {
+            String.prototype.contains = function (s) {
+                return this.indexOf(s) !== -1;
+            };
+        }
+        (function (selector) {
+            if (!selector) return;
+            var oldQuerySelectorAll = Element.prototype.querySelectorAll;
+            Element.prototype.querySelectorAll = function (selector) {
+                var result = oldQuerySelectorAll.apply(this, arguments);
+                if (selector.indexOf(':contains') === -1) {
+                    return result;
+                }
+                var containsText = selector.match(/:contains\(['"]([^'"]*)['"]\)/);
+                if (containsText && containsText[1]) {
+                    var text = containsText[1];
+                    var newSelector = selector.replace(/:contains\(['"]([^'"]*)['"]\)/g, '');
+                    var filtered = [];
+                    oldQuerySelectorAll.apply(this, [newSelector]).forEach(function (el) {
+                        if (el.textContent.includes(text)) {
+                            filtered.push(el);
+                        }
+                    });
+                    return filtered;
+                }
+                return result;
+            };
+        })(Element.prototype.querySelectorAll);
+    </script>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-app.js";
