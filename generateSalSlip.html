@@ -7,8 +7,10 @@
   <title>Salary Slip</title>
   <style>
     body {
+      align-self: center;
+      align-items: center;
       font-family: Arial, sans-serif;
-      margin: 20px;
+      width: 60%;
       background-color: #ffffff;
     }
     h2 {
@@ -81,28 +83,21 @@
     }
   </style>
 </head>
-<body>
+<body style="margin-left: 20%;">
+  
+  <div style="align-items: center;"  id="slip-container"></div>
+  <div class="print-button">
+    <button onclick="window.print()">Print Salary Slip</button>
+  </div>
   <script>
-    // Get data from URL parameters
     const urlParams = new URLSearchParams(window.location.search);
     const slipData = urlParams.get('data');
     const empName = urlParams.get('empName');
     const formattedMonth = urlParams.get('formattedMonth');
 
-    // Display the slip data with updated title
-    document.body.innerHTML = decodeURIComponent(slipData);
-    // Append logo and signature
-;
-
-document.body.innerHTML = headerLogo + document.body.innerHTML + footerSignature;
-
+    // Inject salary slip content into container
+    document.getElementById('slip-container').innerHTML = decodeURIComponent(slipData);
     document.title = `Salary Slip - ${decodeURIComponent(empName)} ${decodeURIComponent(formattedMonth)}`;
-
-    // Add print button
-    const printButton = document.createElement('div');
-    printButton.className = 'print-button';
-    printButton.innerHTML = '<button onclick="window.print()">Print Salary Slip</button>';
-    document.body.appendChild(printButton);
   </script>
 </body>
 </html>
