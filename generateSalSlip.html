@@ -90,14 +90,16 @@
     <button onclick="window.print()">Print Salary Slip</button>
   </div>
   <script>
-    const urlParams = new URLSearchParams(window.location.search);
-    const slipData = urlParams.get('data');
-    const empName = urlParams.get('empName');
-    const formattedMonth = urlParams.get('formattedMonth');
+  const slipData = sessionStorage.getItem('salarySlipHTML');
+  const empName = sessionStorage.getItem('empName');
+  const formattedMonth = sessionStorage.getItem('formattedMonth');
 
-    // Inject salary slip content into container
-    document.getElementById('slip-container').innerHTML = decodeURIComponent(slipData);
-    document.title = `Salary Slip - ${decodeURIComponent(empName)} ${decodeURIComponent(formattedMonth)}`;
-  </script>
+  if (slipData && empName && formattedMonth) {
+    document.getElementById('slip-container').innerHTML = slipData;
+    document.title = `Salary Slip - ${empName} ${formattedMonth}`;
+  } else {
+    document.getElementById('slip-container').innerHTML = "<p style='color:red;'>Error: Salary slip data not found.</p>";
+  }
+</script>
 </body>
 </html>
