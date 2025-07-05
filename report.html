@@ -148,40 +148,53 @@
 
         <div class="mb-2 no-print">
             <label for="reportMonth" class="form-label">Select Month</label>
-            <input style="width: 15%;" type="month" id="reportMonth" class="form-control" style="font-size: 0.85em; padding: 4px;" />
+            <input style="width: 15%;" type="month" id="reportMonth" class="form-control"
+                style="font-size: 0.85em; padding: 4px;" />
         </div>
+        <div style="display: block;" class="d-flex align-items-start gap-2 no-print mb-2"></div>
+            <button onclick="saveShiftsToFirebase()" class="btn btn-warning btn-sm no-print">Save Shifts</button>
+            <button onclick="saveMonthlyReport()" class="btn btn-success btn-sm no-print ms-2">Save Monthly Report</button>
 
-        <button onclick="saveShiftsToFirebase()" class="btn btn-warning btn-sm no-print">Save Shifts</button>
-        <button onclick="saveMonthlyReport()" class="btn btn-success btn-sm no-print ms-2">Save Monthly Report</button>
-        <button onclick="window.print()" class="btn btn-primary btn-sm no-print ms-2">Print</button>
 
-        <table class="table table-bordered" id="salaryTable">
-            <thead>
-                <tr>
-                    <th>S. No.</th>
-                    <th>Emp Name</th>
-                    <th>Shift</th>
-                    <th>Basic (₹)</th>
-                    <th>HRA (₹)</th>
-                    <th>Convey (₹)</th>
-                    <th>Others (₹)</th>
-                    <th>Tot Sal (₹)</th>
-                    <th>Pres Days</th>
-                    <th>Abs Days</th>
-                    <th>Adv Given (₹)</th>
-                    <th>Loan Given (₹)</th>
-                    <th>Loan Repd (₹)</th>
-                    <th>Loan Left (₹)</th>
-                    <th>Day Adj</th>
-                    <th>Hour Adj</th>
-                    <th>Net Sal (₹)</th>
-                    <th class="no-print">Action</th>
-                </tr>
-            </thead>
-            <tbody id="salaryTableBody"></tbody>
-        </table>
+
+            <div class="dropdown">
+                <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                    Select Employees
+                </button>
+                <ul class="dropdown-menu" id="employeeCheckboxList" style=" overflow-y: auto; padding: 10px;">
+                </ul>
+                <button onclick="printSelectedEmployees()" class="btn btn-primary btn-sm">Print</button>
+            </div>
+        </div>
     </div>
 
+
+    <table class="table table-bordered" id="salaryTable">
+        <thead>
+            <tr>
+                <th>S. No.</th>
+                <th>Emp Name</th>
+                <th>Shift</th>
+                <th>Basic (₹)</th>
+                <th>HRA (₹)</th>
+                <th>Convey (₹)</th>
+                <th>Others (₹)</th>
+                <th>Tot Sal (₹)</th>
+                <th>Pres Days</th>
+                <th>Abs Days</th>
+                <th>Adv Given (₹)</th>
+                <th>Loan Given (₹)</th>
+                <th>Loan Repd (₹)</th>
+                <th>Loan Left (₹)</th>
+                <th>Day Adj</th>
+                <th>Hour Adj</th>
+                <th>Net Sal (₹)</th>
+                <th class="no-print">Action</th>
+            </tr>
+        </thead>
+        <tbody id="salaryTableBody"></tbody>
+    </table>
+    </div>
     <script>
         // Global variables
         let employees = JSON.parse(localStorage.getItem('employees')) || [];
@@ -465,6 +478,64 @@
             }
         }
 
+
+        function renderEmployeeDropdown() {
+            const list = document.getElementById('employeeCheckboxList');
+            list.innerHTML = '';
+
+            // All Employees option
+            const allItem = document.createElement('li');
+            allItem.innerHTML = `
+      <div class="form-check">
+        <input class="form-check-input" type="checkbox" id="checkAllEmployees" checked onchange="toggleAllEmployees(this)">
+        <label class="form-check-label" for="checkAllEmployees">All Employees</label>
+      </div>
+    `;
+            list.appendChild(allItem);
+
+            // Individual employees
+            employees.forEach(emp => {
+                const li = document.createElement('li');
+                li.innerHTML = `
+        <div class="form-check">
+          <input class="form-check-input emp-check" type="checkbox" id="empCheck_${emp.name}" data-name="${emp.name}" checked>
+          <label class="form-check-label" for="empCheck_${emp.name}">${emp.name}</label>
+        </div>
+      `;
+                list.appendChild(li);
+            });
+        }
+
+        function toggleAllEmployees(masterCheckbox) {
+            const checked = masterCheckbox.checked;
+            document.querySelectorAll('.emp-check').forEach(cb => cb.checked = checked);
+        }
+
+        function printSelectedEmployees() {
+            const selected = new Set();
+            document.querySelectorAll('.emp-check:checked').forEach(cb => {
+                selected.add(cb.getAttribute('data-name'));
+            });
+
+            const rows = document.querySelectorAll('#salaryTableBody tr');
+            rows.forEach(row => {
+                const nameCell = row.querySelector('.emp-name');
+                if (!nameCell) return; // Skip summary row
+                const empName = nameCell.textContent.trim();
+                row.style.display = selected.has(empName) ? '' : 'none';
+            });
+
+            window.print();
+
+            // Restore all rows
+            setTimeout(() => {
+                rows.forEach(row => (row.style.display = ''));
+            }, 500);
+        }
+
+
+
+
         async function changeShift(empName, value) {
             shiftData[empName] = parseInt(value);
             const selectedMonth = getCurrentMonthKey();
@@ -492,45 +563,69 @@
         }
 
         function generateSlip(empName, monthKey, details) {
+
             const formattedMonth = new Date(monthKey + '-01').toLocaleString('default', { month: 'long', year: 'numeric' });
-            // The net salary passed here from displaySalaries already excludes hoursAdjustment
-            const finalNetSalary = Math.round(details.initialSalary); // This is already the net salary without hours adjustment
+            const finalNetSalary = Math.round(details.initialSalary); // Net salary excluding hoursAdjustment
 
             let slipHTML = `
-                <h2>Salary Slip - ${empName}</h2>
-                <p><strong>Month:</strong> ${formattedMonth}</p>
-                <table>
-                    <tr><th>Description</th><th>Amount (₹)</th></tr>
-                    <tr><td>Basic</td><td>${formatMoney(details.basic)}</td></tr>
-                    <tr><td>HRA</td><td>${formatMoney(details.hra)}</td></tr>
-                    <tr><td>Conveyance</td><td>${formatMoney(details.conveyance)}</td></tr>
-                    <tr><td>Others</td><td>${formatMoney(details.others)}</td></tr>
-                    <tr><td><strong>Total Salary</strong></td><td><strong>${formatMoney(details.totalSalary)}</strong></td></tr>
-                    <tr><td>Present Days</td><td>${details.presentDays}</td></tr>
-                    <tr><td>Absent Days</td><td>${details.absentDays}</td></tr>
-                    <tr><td>Advance Given</td><td>${formatMoney(details.totalAdvance)}</td></tr>
-                    <tr><td>Loan Given</td><td>${formatMoney(details.totalLoanGiven)}</td></tr>
-                    <tr><td>Loan Repaid</td><td>${formatMoney(details.totalLoanRepaid)}</td></tr>
-                    <tr><td>Loan Left</td><td>${formatMoney(details.totalLoanLeft)}</td></tr>
-                    
-            `;
+        <h2>Salary Slip - ${empName}</h2>
+        <p><strong>Month:</strong> ${formattedMonth}</p>
+        <table border="1" cellpadding="5" cellspacing="0" style="border-collapse: collapse; width: 100%;">
+            <tr><th style="text-align:left;">Description</th><th style="text-align:right;">Amount (₹)</th></tr>
+            <tr><td>Basic</td><td style="text-align:right;">${formatMoney(details.basic)}</td></tr>
+            <tr><td>HRA</td><td style="text-align:right;">${formatMoney(details.hra)}</td></tr>
+            <tr><td>Conveyance</td><td style="text-align:right;">${formatMoney(details.conveyance)}</td></tr>
+            <tr><td>Others</td><td style="text-align:right;">${formatMoney(details.others)}</td></tr>
+            <tr><td><strong>Total Salary</strong></td><td style="text-align:right;"><strong>${formatMoney(details.totalSalary)}</strong></td></tr>
+            <tr><td>Present Days</td><td style="text-align:right;">${details.presentDays}</td></tr>
+            <tr><td>Absent Days</td><td style="text-align:right;">${details.absentDays}</td></tr>
+    `;
 
-            // Still display hours adjustment if it exists
+            // ✅ Advance Section with Full Date-wise Breakdown
+            const advanceList = (advances[empName] || []).filter(adv => {
+                const advDate = new Date(adv.date);
+                return advDate >= new Date(`${monthKey}-01`) && advDate <= new Date(`${monthKey}-31`);
+            });
+
+            if (advanceList.length > 0) {
+                slipHTML += `<tr><td colspan="2"><strong>Advance Taken</strong></td></tr>`;
+                advanceList.forEach(adv => {
+                    const dateFormatted = new Date(adv.date).toLocaleDateString('en-IN', {
+                        day: '2-digit', month: 'short', year: 'numeric'
+                    });
+                    slipHTML += `<tr><td>Advance on ${dateFormatted}</td><td style="text-align:right;">${formatMoney(adv.amount)}</td></tr>`;
+                });
+                const totalAdvance = advanceList.reduce((sum, adv) => sum + (adv.amount || 0), 0);
+                slipHTML += `<tr><td><strong>Total Advance</strong></td><td style="text-align:right;"><strong>${formatMoney(totalAdvance)}</strong></td></tr>`;
+            } else {
+                slipHTML += `<tr><td>Advance Taken</td><td style="text-align:right;">₹0</td></tr>`;
+            }
+
+            // Loan Info
+            slipHTML += `
+        <tr><td>Loan Given</td><td style="text-align:right;">${formatMoney(details.totalLoanGiven)}</td></tr>
+        <tr><td>Loan Repaid</td><td style="text-align:right;">${formatMoney(details.totalLoanRepaid)}</td></tr>
+        <tr><td>Loan Left</td><td style="text-align:right;">${formatMoney(details.totalLoanLeft)}</td></tr>
+    `;
+
+            // Optional: Hours Adjustment
             if (details.hoursAdjustment !== 0) {
                 slipHTML += `
-                    <tr><td>Hours Adjustment (${details.hoursDisplay})</td><td>${formatMoney(details.hoursAdjustment)}</td></tr>
-                `;
+            <tr><td>Hours Adjustment (${details.hoursDisplay})</td><td style="text-align:right;">${formatMoney(details.hoursAdjustment)}</td></tr>
+        `;
             }
 
             slipHTML += `
-                <tr style="background-color: #e8faff;"><td><strong>Net Salary</strong></td><td><strong>₹${finalNetSalary}</strong></td></tr>
-                </table>
-            `;
+        <tr style="background-color: #e8faff;"><td><strong>Net Salary</strong></td><td style="text-align:right;"><strong>₹${finalNetSalary}</strong></td></tr>
+        </table>
+    `;
 
-            window.open(
-                `generateSalSlip.html?data=${encodeURIComponent(slipHTML)}&empName=${encodeURIComponent(empName)}&formattedMonth=${encodeURIComponent(formattedMonth)}`,
-                '_blank'
-            );
+            // ✅ Use sessionStorage for safe data transfer
+            sessionStorage.setItem('salarySlipHTML', slipHTML);
+            sessionStorage.setItem('empName', empName);
+            sessionStorage.setItem('formattedMonth', formattedMonth);
+
+            window.open('generateSalSlip.html', '_blank');
         }
 
         document.getElementById('reportMonth').addEventListener('change', async function () {
@@ -548,7 +643,9 @@
             const defaultMonth = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
             document.getElementById('reportMonth').value = defaultMonth;
             displaySalaries(defaultMonth);
+            renderEmployeeDropdown(); // ✅ call this to generate dropdown
         };
+
 
         async function saveShiftsToFirebase() {
             try {
@@ -698,7 +795,7 @@
         }
 
         window.showToast = showToast;
-        window.db = db; // Expose db to global scope for the non-module script
+        window.db = db;
     </script>
 </body>
 
